@@ -7,15 +7,14 @@
   <link rel="icon" type="image/jpeg" href="logo.jpg" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
-<body>
 
   <nav class="nav">
     <div class="nav-brand">
       <div class="name">Delp - The Help Desk WebApp</div>
     </div>
     <div class="nav-actions">
-      <button id="openLogin" class="btn btn-solid">Σύνδεση</button>
-      <button id="openRegister" class="btn btn-solid">Εγγραφή</button>
+      <button class="btn btn-solid" onclick="openModal('login')">Σύνδεση</button>
+      <button class="btn btn-solid" onclick="openModal('register')">Εγγραφή</button>
     </div>
   </nav>
 
@@ -24,37 +23,37 @@
     <p>Το σύστημα Help Desk για την υποστήριξη του οργανισμού σας.</p>
   </main>
 
-  <div id="overlay" class="overlay">
+  <div id="overlay" class="overlay" onclick="if (event.target === this) closeModal()">
     <div class="modal">
-      <button id="closeModal" class="modal-close" aria-label="Κλείσιμο">&times;</button>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
       <h2 id="modalTitle">Σύνδεση</h2>
 
       <div class="tabs">
-        <button id="tabLogin" class="tab active">Σύνδεση</button>
-        <button id="tabRegister" class="tab">Εγγραφή</button>
+        <button id="tabLogin" class="tab active" onclick="setMode('login')">Σύνδεση</button>
+        <button id="tabRegister" class="tab" onclick="setMode('register')">Εγγραφή</button>
       </div>
 
-      <form id="authForm" novalidate>
+      <form id="authForm" onsubmit="submitForm(event)">
         <div class="field">
           <label for="username">Username</label>
-          <input type="text" id="username" name="username" autocomplete="username" />
+          <input type="text" id="username" name="username" />
         </div>
 
         <div class="field register-only">
           <label for="firstName">Όνομα</label>
-          <input type="text" id="firstName" name="firstName" autocomplete="given-name" />
+          <input type="text" id="firstName" name="firstName" />
         </div>
         <div class="field register-only">
           <label for="lastName">Επώνυμο</label>
-          <input type="text" id="lastName" name="lastName" autocomplete="family-name" />
+          <input type="text" id="lastName" name="lastName" />
         </div>
         <div class="field register-only">
           <label for="email">E-mail</label>
-          <input type="email" id="email" name="email" autocomplete="email" />
+          <input type="email" id="email" name="email" />
         </div>
         <div class="field register-only">
           <label for="country">Χώρα</label>
-          <select id="country" name="country">
+          <select id="country" name="country" onchange="onCountryChange()">
             <option value="">Επιλέξτε χώρα…</option>
           </select>
         </div>
@@ -66,17 +65,18 @@
         </div>
         <div class="field register-only">
           <label for="address">Διεύθυνση</label>
-          <input type="text" id="address" name="address" autocomplete="street-address" />
+          <input type="text" id="address" name="address" />
         </div>
 
         <div class="field">
           <label for="password">Password</label>
-          <input type="password" id="password" name="password" autocomplete="current-password" />
+          <input type="password" id="password" name="password" />
+          <small class="hint">Τουλάχιστον 6 χαρακτήρες</small>
         </div>
 
         <div class="field register-only">
           <label for="confirm">Επιβεβαίωση Password</label>
-          <input type="password" id="confirm" name="confirm" autocomplete="new-password" />
+          <input type="password" id="confirm" name="confirm" />
         </div>
 
         <button type="submit" id="submitBtn" class="btn btn-solid btn-block">Σύνδεση</button>

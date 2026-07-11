@@ -3,10 +3,54 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: diadiktiakos-app
+    container_name: Delp-app
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
+      - TZ=Europe/Athens
       - PORT=3000
       - NODE_ENV=production
+      - DB_HOST=db
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
+
+  db:
+    image: mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b
+    container_name: Delp-db
+    environment:
+      - TZ=Europe/Athens
+      - MYSQL_ROOT_PASSWORD=rootpass
+      - MYSQL_DATABASE=helpdesk
+      - MYSQL_USER=helpdesk
+      - MYSQL_PASSWORD=helpdeskpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: Delp-phpmyadmin
+    environment:
+      - PMA_HOST=db
+      - PMA_PORT=3306
+      - MYSQL_ROOT_PASSWORD=rootpass
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  db_data:
