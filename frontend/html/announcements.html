@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delp - Ανακοινώσεις</title>
+  <link rel="icon" type="image/jpeg" href="../logo.jpg" />
+  <link rel="stylesheet" href="../css/styles.css" />
+</head>
+<body>
+  <div id="nav"></div>
+
+  <main class="page">
+    <h1>Ανακοινώσεις</h1>
+    <div id="msg" class="msg"></div>
+
+    <div class="layout-split">
+      <div class="table-wrap">
+        <div id="announcementList"></div>
+      </div>
+
+      <aside class="side-panel" id="announcementPanel" style="display: none;">
+        <h2 id="announcementModalTitle">Νέα Ανακοίνωση</h2>
+        <form id="announcementForm" onsubmit="saveAnnouncement(event)">
+          <input type="hidden" id="announcementId" />
+          <div class="field">
+            <label for="title">Τίτλος</label>
+            <input type="text" id="title" name="title" />
+          </div>
+          <div class="field">
+            <label for="body">Κείμενο</label>
+            <textarea id="body" name="body" rows="4"></textarea>
+          </div>
+          <button type="submit" class="btn btn-solid btn-block">Αποθήκευση</button>
+        </form>
+      </aside>
+    </div>
+  </main>
+
+  <div id="announcementEditOverlay" class="overlay" onclick="if (event.target === this) closeModalById('announcementEditOverlay')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModalById('announcementEditOverlay')">&times;</button>
+      <h2>Επεξεργασία Ανακοίνωσης</h2>
+      <form id="announcementEditForm" onsubmit="saveAnnouncementEdit(event)">
+        <input type="hidden" id="editAnnouncementId" />
+        <div class="field">
+          <label for="editTitle">Τίτλος</label>
+          <input type="text" id="editTitle" name="editTitle" />
+        </div>
+        <div class="field">
+          <label for="editBody">Κείμενο</label>
+          <textarea id="editBody" name="editBody" rows="4"></textarea>
+        </div>
+        <button type="submit" class="btn btn-solid btn-block">Αποθήκευση</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/common.js"></script>
+  <script src="../js/announcements.js"></script>
+</body>
+</html>

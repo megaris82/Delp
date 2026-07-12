@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delp - Κατηγορίες</title>
+  <link rel="icon" type="image/jpeg" href="../logo.jpg" />
+  <link rel="stylesheet" href="../css/styles.css" />
+</head>
+<body>
+  <div id="nav"></div>
+
+  <main class="page">
+    <h1>Κατηγορίες</h1>
+    <div id="msg" class="msg"></div>
+
+    <div class="layout-split">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Όνομα</th>
+              <th>Προτεραιότητα</th>
+              <th>Ενέργειες</th>
+            </tr>
+          </thead>
+          <tbody id="categoryRows"></tbody>
+        </table>
+      </div>
+
+      <aside class="side-panel">
+        <h2 id="categoryModalTitle">Νέα Κατηγορία</h2>
+        <form id="categoryForm" onsubmit="saveCategory(event)">
+          <input type="hidden" id="categoryId" />
+          <div class="field">
+            <label for="name">Όνομα</label>
+            <input type="text" id="name" name="name" />
+          </div>
+          <div class="field">
+            <label for="priority">Προτεραιότητα</label>
+            <select id="priority" name="priority">
+              <option value="low">low</option>
+              <option value="medium" selected>medium</option>
+              <option value="high">high</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-solid btn-block">Αποθήκευση</button>
+        </form>
+      </aside>
+    </div>
+  </main>
+
+  <div id="categoryEditOverlay" class="overlay" onclick="if (event.target === this) closeModalById('categoryEditOverlay')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModalById('categoryEditOverlay')">&times;</button>
+      <h2>Επεξεργασία Κατηγορίας</h2>
+      <form id="categoryEditForm" onsubmit="saveCategoryEdit(event)">
+        <input type="hidden" id="editCategoryId" />
+        <div class="field">
+          <label for="editName">Όνομα</label>
+          <input type="text" id="editName" name="editName" />
+        </div>
+        <div class="field">
+          <label for="editPriority">Προτεραιότητα</label>
+          <select id="editPriority" name="editPriority">
+            <option value="low">low</option>
+            <option value="medium">medium</option>
+            <option value="high">high</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-solid btn-block">Αποθήκευση</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/common.js"></script>
+  <script src="../js/categories.js"></script>
+</body>
+</html>

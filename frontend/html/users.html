@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delp - Χρήστες</title>
+  <link rel="icon" type="image/jpeg" href="../logo.jpg" />
+  <link rel="stylesheet" href="../css/styles.css" />
+</head>
+<body>
+  <div id="nav"></div>
+
+  <main class="page">
+    <h1>Διαχείριση Χρηστών</h1>
+    <div id="msg" class="msg"></div>
+
+    <div class="layout-split">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Username</th>
+              <th>Ονοματεπώνυμο</th>
+              <th>Email</th>
+              <th>Ρόλος</th>
+              <th>Κατάσταση</th>
+              <th>Ενέργειες</th>
+            </tr>
+          </thead>
+          <tbody id="userRows"></tbody>
+        </table>
+      </div>
+
+      <aside class="side-panel">
+        <h2>Φίλτρα</h2>
+        <div class="field">
+          <label for="filterRole">Ρόλος</label>
+          <select id="filterRole">
+            <option value="">Όλοι</option>
+            <option value="user">user</option>
+            <option value="technician">technician</option>
+            <option value="admin">admin</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="filterStatus">Κατάσταση</label>
+          <select id="filterStatus">
+            <option value="">Όλες</option>
+            <option value="pending">pending</option>
+            <option value="denied">denied</option>
+            <option value="accepted">accepted</option>
+          </select>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <div id="userOverlay" class="overlay" onclick="if (event.target === this) closeModalById('userOverlay')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModalById('userOverlay')">&times;</button>
+      <h2>Επεξεργασία Χρήστη</h2>
+      <form id="userForm" onsubmit="saveUser(event)">
+        <input type="hidden" id="userId" />
+        <div class="field">
+          <label>Χρήστης</label>
+          <input type="text" id="userLabel" disabled />
+        </div>
+        <div class="field">
+          <label for="firstName">Όνομα</label>
+          <input type="text" id="firstName" />
+        </div>
+        <div class="field">
+          <label for="lastName">Επώνυμο</label>
+          <input type="text" id="lastName" />
+        </div>
+        <div class="field">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" />
+        </div>
+        <div class="field">
+          <label for="country">Χώρα</label>
+          <select id="country" onchange="onCountryChange()">
+            <option value="">Επιλέξτε χώρα…</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="city">Πόλη</label>
+          <select id="city" disabled>
+            <option value="">Επιλέξτε πρώτα χώρα…</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="address">Διεύθυνση</label>
+          <input type="text" id="address" />
+        </div>
+        <div class="field">
+          <label for="role">Ρόλος</label>
+          <select id="role">
+            <option value="user">user</option>
+            <option value="technician">technician</option>
+            <option value="admin">admin</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="status">Κατάσταση</label>
+          <select id="status">
+            <option value="pending">pending</option>
+            <option value="denied">denied</option>
+            <option value="accepted">accepted</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-solid btn-block">Αποθήκευση</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/common.js"></script>
+  <script src="../js/users.js"></script>
+</body>
+</html>

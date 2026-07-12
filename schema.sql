@@ -22,8 +22,7 @@ CREATE TABLE users (
   address         VARCHAR(150),
    `role`          ENUM('user', 'technician', 'admin') NOT NULL DEFAULT 'user',
   register_status ENUM('pending', 'denied', 'accepted') NOT NULL DEFAULT 'pending',
-  created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- --------------------------------------------------------

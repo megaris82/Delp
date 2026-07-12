@@ -153,8 +153,12 @@ function submitForm(e) {
       }
       if (mode === "register") {
         showMsg("Το αίτημά σας υποβλήθηκε. Ο διαχειριστής θα το εξετάσει και θα αναθέσει ρόλο.", "info");
+        setTimeout(closeModal, 5000);
       } else {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
         showMsg("Συνδεθήκατε!", "ok");
+        window.location.href = "html/dashboard.html";
       }
     })
     .catch(function () {

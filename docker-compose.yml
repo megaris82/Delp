@@ -19,7 +19,7 @@ services:
     restart: unless-stopped
 
   db:
-    image: mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b
+    image: mysql:8.0
     container_name: Delp-db
     environment:
       - TZ=Europe/Athens
