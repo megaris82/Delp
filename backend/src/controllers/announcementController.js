@@ -1,3 +1,4 @@
+// Announcement controller (admin only for mutations).
 const {
   findAll,
   findById,
@@ -6,6 +7,7 @@ const {
   remove,
 } = require("../models/announcementModel");
 
+// Validate an announcement payload (title required).
 function validate(body) {
   const errors = [];
   const title = body && typeof body.title === "string" ? body.title.trim() : "";
@@ -18,6 +20,8 @@ function validate(body) {
   return { errors, value: { title, body: bodyText } };
 }
 
+// GET /api/announcements  (any authenticated user)
+// List all announcements.
 async function list(req, res, next) {
   try {
     const announcements = await findAll();
@@ -27,6 +31,8 @@ async function list(req, res, next) {
   }
 }
 
+// POST /api/announcements  (admin)
+// Create a new announcement. The author is taken from the authenticated admin.
 async function createAnnouncement(req, res, next) {
   try {
     const { errors, value } = validate(req.body);
@@ -40,6 +46,8 @@ async function createAnnouncement(req, res, next) {
   }
 }
 
+// PUT /api/announcements/:id  (admin)
+// Update an existing announcement.
 async function updateAnnouncement(req, res, next) {
   try {
     const existing = await findById(req.params.id);
@@ -57,6 +65,8 @@ async function updateAnnouncement(req, res, next) {
   }
 }
 
+// DELETE /api/announcements/:id  (admin)
+// Delete an announcement.
 async function deleteAnnouncement(req, res, next) {
   try {
     const ok = await remove(req.params.id);

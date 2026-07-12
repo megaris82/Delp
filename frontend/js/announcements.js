@@ -1,20 +1,27 @@
+// announcements.html logic: admin announcement management (list, create, edit, delete).
+// Regular users are redirected away by requireAuth(["admin"]).
+
+// Ensure only admins can access this page.
 const user = requireAuth(["admin"]);
 const isAdmin = user && user.role === "admin";
 
 if (user) {
   mountNav(user);
   if (isAdmin) {
+    // Show the create/edit side panel for admins.
     document.getElementById("announcementPanel").style.display = "block";
   }
   loadAnnouncements();
 }
 
+// Display a message as a modal popup only.
 function setMsg(text, type) {
-  const msg = document.getElementById("msg");
-  msg.textContent = text;
-  msg.className = type ? "msg " + type : "msg";
+  if (text) {
+    notify(text, type);
+  }
 }
 
+// Load announcements and render them; admins also see edit/delete actions.
 function loadAnnouncements() {
   api("/api/announcements")
     .then(function (res) {
@@ -50,14 +57,7 @@ function loadAnnouncements() {
     });
 }
 
-function openAnnouncementModal() {
-  document.getElementById("announcementModalTitle").textContent = "Νέα Ανακοίνωση";
-  document.getElementById("announcementId").value = "";
-  document.getElementById("title").value = "";
-  document.getElementById("body").value = "";
-  document.getElementById("title").focus();
-}
-
+// Open the edit dialog, copying the announcement's current values into the form.
 function editAnnouncement(id) {
   const card = document.getElementById("announcement-" + id);
   document.getElementById("editAnnouncementId").value = id;
@@ -66,6 +66,7 @@ function editAnnouncement(id) {
   openModalById("announcementEditOverlay");
 }
 
+// Save an edited announcement via PUT.
 function saveAnnouncementEdit(e) {
   e.preventDefault();
   const id = document.getElementById("editAnnouncementId").value;
@@ -89,6 +90,7 @@ function saveAnnouncementEdit(e) {
     });
 }
 
+// Create a new announcement (the side-panel form submits here).
 function saveAnnouncement(e) {
   e.preventDefault();
   const id = document.getElementById("announcementId").value;
@@ -106,7 +108,12 @@ function saveAnnouncement(e) {
         return;
       }
       setMsg("Αποθηκεύτηκε.", "ok");
-      openAnnouncementModal();
+      // Reset the side-panel create form for the next entry.
+      document.getElementById("announcementModalTitle").textContent = "Νέα Ανακοίνωση";
+      document.getElementById("announcementId").value = "";
+      document.getElementById("title").value = "";
+      document.getElementById("body").value = "";
+      document.getElementById("title").focus();
       loadAnnouncements();
     })
     .catch(function () {
@@ -114,6 +121,7 @@ function saveAnnouncement(e) {
     });
 }
 
+// Delete an announcement (with confirmation).
 function deleteAnnouncement(id) {
   confirmDialog("Διαγραφή ανακοίνωσης;", function () {
     api("/api/announcements/" + id, { method: "DELETE" })
@@ -130,6 +138,7 @@ function deleteAnnouncement(id) {
   });
 }
 
+// Extract a human-readable error message from an API response.
 function errorText(data) {
   if (data && Array.isArray(data.details) && data.details.length) {
     return data.details.join(" • ");

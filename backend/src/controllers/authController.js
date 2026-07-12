@@ -1,7 +1,11 @@
+// Authentication controller: registration, login and a "who am I" endpoint.
 const { findByUsername, findById, create, verifyPassword } = require("../models/userModel");
 const { signToken, JWT_EXPIRES_IN } = require("../utils/jwt");
 const { validateRegister, validateLogin } = require("../utils/validation");
 
+// POST /api/auth/register
+// Accepts a self-registration request. The new user is stored with
+// register_status = "pending" and role "user"; an admin must approve it later.
 async function register(req, res, next) {
   try {
     const { errors, value } = validateRegister(req.body);
@@ -29,6 +33,8 @@ async function register(req, res, next) {
   }
 }
 
+// POST /api/auth/login
+// Verifies credentials, checks the account is approved, and returns a JWT.
 async function login(req, res, next) {
   try {
     const { errors, value } = validateLogin(req.body);
@@ -41,6 +47,7 @@ async function login(req, res, next) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
+    // Block login until an admin approves the registration request.
     if (user.register_status !== "accepted") {
       return res
         .status(403)
@@ -53,6 +60,7 @@ async function login(req, res, next) {
       role: user.role,
     });
 
+    // Never send the password hash back to the client.
     const { password, ...safeUser } = user;
     return res.json({ message: "Signed in", token, expiresIn: JWT_EXPIRES_IN, user: safeUser });
   } catch (err) {
@@ -60,6 +68,8 @@ async function login(req, res, next) {
   }
 }
 
+// GET /api/auth/me
+// Returns the profile of the currently authenticated user (from the JWT).
 async function me(req, res, next) {
   try {
     const user = await findById(req.user.id);

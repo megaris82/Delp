@@ -1,15 +1,19 @@
+// Data access layer for the "categories" table (problem categories with priority).
 const { pool } = require("../db");
 
+// Return all categories ordered by name.
 async function findAll() {
   const [rows] = await pool.query("SELECT * FROM categories ORDER BY name");
   return rows;
 }
 
+// Return a single category by id.
 async function findById(id) {
   const [rows] = await pool.query("SELECT * FROM categories WHERE id = ?", [id]);
   return rows[0] || null;
 }
 
+// Create a new category.
 async function create(category) {
   const [result] = await pool.query(
     "INSERT INTO categories (name, priority) VALUES (?, ?)",
@@ -18,6 +22,7 @@ async function create(category) {
   return findById(result.insertId);
 }
 
+// Update a category's name and priority.
 async function update(id, category) {
   await pool.query("UPDATE categories SET name = ?, priority = ? WHERE id = ?", [
     category.name,
@@ -27,6 +32,7 @@ async function update(id, category) {
   return findById(id);
 }
 
+// Delete a category by id. Returns true if a row was removed.
 async function remove(id) {
   const [result] = await pool.query("DELETE FROM categories WHERE id = ?", [id]);
   return result.affectedRows > 0;

@@ -1,20 +1,25 @@
+// index.html logic: login / registration modal, and country/city dropdowns
+// populated from the external CountriesNow REST API.
+
+// Endpoint paths for the two auth actions.
 const ENDPOINTS = {
   login: "/api/auth/login",
-  register: "/api/auth/register"
+  register: "/api/auth/register",
 };
 
+// Current modal mode: "login" or "register".
 let mode = "login";
+// Cache of country -> [cities] so we don't re-fetch cities on every country change.
 const cities = {};
 
+// Show a message as a modal popup only (type: "", "error", "info", "ok").
 function showMsg(text, type) {
-  const msg = document.getElementById("msg");
-  msg.textContent = text;
-  msg.className = "msg";
-  if (type) {
-    msg.className = "msg " + type;
+  if (text) {
+    notify(text, type);
   }
 }
 
+// Switch between login and register mode and update the UI accordingly.
 function setMode(next) {
   mode = next;
   const isLogin = next === "login";
@@ -49,15 +54,18 @@ function setMode(next) {
   }
 }
 
+// Open the modal in the given starting mode.
 function openModal(startMode) {
   setMode(startMode);
   document.getElementById("overlay").className = "overlay open";
 }
 
+// Close the modal.
 function closeModal() {
   document.getElementById("overlay").className = "overlay";
 }
 
+// Fetch the list of countries from the external API and fill the country <select>.
 function loadCountries() {
   const country = document.getElementById("country");
   if (country.options.length > 1) {
@@ -83,6 +91,7 @@ function loadCountries() {
     });
 }
 
+// When the country changes, refill the city <select> from the cached list.
 function onCountryChange() {
   const country = document.getElementById("country");
   const city = document.getElementById("city");
@@ -101,6 +110,7 @@ function onCountryChange() {
   city.disabled = list.length === 0;
 }
 
+// Submit the login or registration form.
 function submitForm(e) {
   e.preventDefault();
   showMsg("", "");
@@ -110,7 +120,7 @@ function submitForm(e) {
 
   const payload = {
     username: username,
-    password: password
+    password: password,
   };
 
   if (mode === "register") {
@@ -120,6 +130,12 @@ function submitForm(e) {
     payload.country = document.getElementById("country").value;
     payload.city = document.getElementById("city").value;
     payload.address = document.getElementById("address").value;
+
+    // Client-side password strength check (mirrors the backend minimum length).
+    if (payload.password.length < 6) {
+      showMsg("Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες.", "error");
+      return;
+    }
 
     const confirmPass = document.getElementById("confirm").value;
     if (payload.password !== confirmPass) {
@@ -132,7 +148,7 @@ function submitForm(e) {
   fetch(ENDPOINTS[mode], {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
   })
     .then(function (res) {
       status = res.status;
@@ -148,13 +164,25 @@ function submitForm(e) {
         } else {
           text = data.message || data.error || "Κάτι πήγε στραβά.";
         }
+        // A denied/pending registration is shown only as a modal popup,
+        // not as inline text at the bottom of the form.
+        if (status === 403 && data.error && data.error.indexOf("Registration ") === 0) {
+          if (data.error === "Registration denied") {
+            text = "Η εγγραφή σας απορρίφθηκε.";
+          } else if (data.error === "Registration pending") {
+            text = "Η εγγραφή σας βρίσκεται σε αναμονή έγκρισης από τον διαχειριστή.";
+          }
+          notify(text, "error");
+          return;
+        }
         showMsg(text, "error");
         return;
       }
       if (mode === "register") {
-        showMsg("Το αίτημά σας υποβλήθηκε. Ο διαχειριστής θα το εξετάσει και θα αναθέσει ρόλο.", "info");
+        notify("Το αίτημά σας υποβλήθηκε. Ο διαχειριστής θα το εξετάσει και θα αναθέσει ρόλο.", "info");
         setTimeout(closeModal, 5000);
       } else {
+        // On successful login, store the token + user and go to the dashboard.
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
         showMsg("Συνδεθήκατε!", "ok");

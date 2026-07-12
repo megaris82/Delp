@@ -1,3 +1,4 @@
+// Category management controller (admin only for mutations).
 const {
   findAll,
   findById,
@@ -8,6 +9,7 @@ const {
 
 const PRIORITIES = ["low", "medium", "high"];
 
+// Validate a category payload (name required, priority must be valid).
 function validate(body) {
   const errors = [];
   const name = body && typeof body.name === "string" ? body.name.trim() : "";
@@ -23,6 +25,8 @@ function validate(body) {
   return { errors, value: { name, priority } };
 }
 
+// GET /api/categories  (any authenticated user)
+// List all categories.
 async function list(req, res, next) {
   try {
     const categories = await findAll();
@@ -32,6 +36,8 @@ async function list(req, res, next) {
   }
 }
 
+// POST /api/categories  (admin)
+// Create a new category.
 async function createCategory(req, res, next) {
   try {
     const { errors, value } = validate(req.body);
@@ -45,6 +51,8 @@ async function createCategory(req, res, next) {
   }
 }
 
+// PUT /api/categories/:id  (admin)
+// Update an existing category.
 async function updateCategory(req, res, next) {
   try {
     const existing = await findById(req.params.id);
@@ -62,6 +70,8 @@ async function updateCategory(req, res, next) {
   }
 }
 
+// DELETE /api/categories/:id  (admin)
+// Delete a category.
 async function deleteCategory(req, res, next) {
   try {
     const ok = await remove(req.params.id);

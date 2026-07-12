@@ -1,3 +1,6 @@
+// announcements-view.html logic: read-only list of announcements for all users.
+
+// Ensure the visitor is authenticated.
 const user = requireAuth();
 
 if (user) {
@@ -5,12 +8,14 @@ if (user) {
   loadAnnouncements();
 }
 
+// Display a message as a modal popup only.
 function setMsg(text, type) {
-  const msg = document.getElementById("msg");
-  msg.textContent = text;
-  msg.className = type ? "msg " + type : "msg";
+  if (text) {
+    notify(text, type);
+  }
 }
 
+// Load and render all announcements.
 function loadAnnouncements() {
   api("/api/announcements")
     .then(function (res) {

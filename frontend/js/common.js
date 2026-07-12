@@ -1,7 +1,13 @@
+// common.js – Shared helpers used by every authenticated page:
+// token/user storage, route guards, navigation rendering, an AJAX wrapper,
+// HTML escaping, and a reusable confirmation dialog.
+
+// Read the JWT from localStorage.
 function getToken() {
   return localStorage.getItem("token");
 }
 
+// Read the current user object from localStorage (parsed JSON).
 function getUser() {
   try {
     return JSON.parse(localStorage.getItem("user"));
@@ -10,12 +16,15 @@ function getUser() {
   }
 }
 
+// Clear stored session and return to the landing page.
 function logout() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
   window.location.href = "../index.html";
 }
 
+// Guard: redirect to login if not authenticated, or to the dashboard if the
+// user's role is not in the allowed list. Returns the user or null.
 function requireAuth(allowedRoles) {
   const token = getToken();
   const user = getUser();
@@ -30,6 +39,9 @@ function requireAuth(allowedRoles) {
   return user;
 }
 
+// Build the top navigation HTML based on the user's role.
+//  - Everyone sees "Tickets" and "Ανακοινώσεις".
+//  - Admins additionally see "Χρήστες" and "Κατηγορίες".
 function renderNav(user) {
   const links = [{ label: "Tickets", href: "dashboard.html" }];
 
@@ -37,6 +49,7 @@ function renderNav(user) {
     links.push({ label: "Χρήστες", href: "users.html" });
     links.push({ label: "Κατηγορίες", href: "categories.html" });
   }
+  // Admins manage announcements; everyone else only views them.
   const announcementHref =
     user.role === "admin" ? "announcements.html" : "announcements-view.html";
   links.push({ label: "Ανακοινώσεις", href: announcementHref });
@@ -52,7 +65,7 @@ function renderNav(user) {
 
   return (
     '<nav class="nav">' +
-    '<div class="nav-brand"><div class="name">Delp</div></div>' +
+    '<div class="nav-brand"><div class="name">Delp - The Help Desk WebApp</div></div>' +
     '<div class="nav-links">' +
     linksHtml +
     "</div>" +
@@ -68,6 +81,7 @@ function renderNav(user) {
   );
 }
 
+// Inject the navigation into the #nav placeholder of the current page.
 function mountNav(user) {
   const holder = document.getElementById("nav");
   if (holder) {
@@ -75,25 +89,30 @@ function mountNav(user) {
   }
 }
 
+// Show a modal overlay by id.
 function openModalById(id) {
   document.getElementById(id).className = "overlay open";
 }
 
+// Hide a modal overlay by id.
 function closeModalById(id) {
   document.getElementById(id).className = "overlay";
 }
 
+// Thin fetch wrapper that injects the Bearer token, handles JSON/form bodies,
+// and auto-logs-out on 401. Returns { status, data }.
 function api(path, options) {
   options = options || {};
   const headers = options.headers || {};
   headers["Authorization"] = "Bearer " + getToken();
-  if (options.body) {
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+  if (options.body && !isFormData) {
     headers["Content-Type"] = "application/json";
   }
   return fetch(path, {
     method: options.method || "GET",
     headers: headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    body: options.body ? (isFormData ? options.body : JSON.stringify(options.body)) : undefined,
   }).then(function (res) {
     if (res.status === 401) {
       logout();
@@ -105,6 +124,7 @@ function api(path, options) {
   });
 }
 
+// Escape user-provided strings before inserting them into innerHTML (XSS protection).
 function escapeHtml(value) {
   if (value === null || value === undefined) {
     return "";
@@ -116,6 +136,7 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;");
 }
 
+// Show a reusable confirm dialog. Calls onConfirm() when the user accepts.
 function confirmDialog(message, onConfirm) {
   let overlay = document.getElementById("confirmOverlay");
   if (!overlay) {
@@ -148,8 +169,46 @@ function confirmDialog(message, onConfirm) {
   overlay.className = "overlay open";
 }
 
+// Hide the confirm dialog.
 function closeConfirm() {
   const overlay = document.getElementById("confirmOverlay");
+  if (overlay) {
+    overlay.className = "overlay";
+  }
+}
+
+// Show a reusable notification modal (type: "", "error", "ok", "info").
+// Used to surface errors and confirmations as pop-up modals instead of
+// inline page text.
+function notify(message, type) {
+  let overlay = document.getElementById("notifyOverlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "notifyOverlay";
+    overlay.className = "overlay";
+    overlay.innerHTML =
+      '<div class="modal modal-sm">' +
+      '<p id="notifyMessage" class="confirm-message"></p>' +
+      '<div class="modal-actions">' +
+      '<button class="btn btn-solid" onclick="closeNotify()">OK</button>' +
+      "</div>" +
+      "</div>";
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) {
+        closeNotify();
+      }
+    });
+  }
+  const msg = document.getElementById("notifyMessage");
+  msg.textContent = message;
+  msg.className = type ? "confirm-message " + type : "confirm-message";
+  overlay.className = "overlay open";
+}
+
+// Hide the notification modal.
+function closeNotify() {
+  const overlay = document.getElementById("notifyOverlay");
   if (overlay) {
     overlay.className = "overlay";
   }

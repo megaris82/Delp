@@ -17,6 +17,8 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
+    volumes:
+      - "C:/Users/geras/Documents/DelpFiles:/app/backend/uploads"
 
   db:
     image: mysql:8.0

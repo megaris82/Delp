@@ -1,3 +1,7 @@
+// categories.html logic: admin category management (list, create, edit, delete)
+// with an associated priority level.
+
+// Ensure only admins can access this page.
 const user = requireAuth(["admin"]);
 
 if (user) {
@@ -5,12 +9,14 @@ if (user) {
   loadCategories();
 }
 
+// Display a message as a modal popup only.
 function setMsg(text, type) {
-  const msg = document.getElementById("msg");
-  msg.textContent = text;
-  msg.className = type ? "msg " + type : "msg";
+  if (text) {
+    notify(text, type);
+  }
 }
 
+// Load categories from the API and render the table.
 function loadCategories() {
   api("/api/categories")
     .then(function (res) {
@@ -43,6 +49,7 @@ function loadCategories() {
     });
 }
 
+// Reset the side-panel form for creating a new category.
 function openCategoryModal() {
   document.getElementById("categoryModalTitle").textContent = "Νέα Κατηγορία";
   document.getElementById("categoryId").value = "";
@@ -51,6 +58,7 @@ function openCategoryModal() {
   document.getElementById("name").focus();
 }
 
+// Open the edit dialog for a category (values passed from the table row).
 function editCategory(id, name, priority) {
   document.getElementById("editCategoryId").value = id;
   document.getElementById("editName").value = name;
@@ -58,6 +66,7 @@ function editCategory(id, name, priority) {
   openModalById("categoryEditOverlay");
 }
 
+// Save an edited category via PUT.
 function saveCategoryEdit(e) {
   e.preventDefault();
   const id = document.getElementById("editCategoryId").value;
@@ -81,6 +90,7 @@ function saveCategoryEdit(e) {
     });
 }
 
+// Create a new category (the side-panel form submits here).
 function saveCategory(e) {
   e.preventDefault();
   const id = document.getElementById("categoryId").value;
@@ -106,6 +116,7 @@ function saveCategory(e) {
     });
 }
 
+// Delete a category (with confirmation).
 function deleteCategory(id) {
   confirmDialog("Διαγραφή κατηγορίας;", function () {
     api("/api/categories/" + id, { method: "DELETE" })
@@ -122,6 +133,7 @@ function deleteCategory(id) {
   });
 }
 
+// Extract a human-readable error message from an API response.
 function errorText(data) {
   if (data && Array.isArray(data.details) && data.details.length) {
     return data.details.join(" • ");

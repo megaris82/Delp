@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+  dashboard.html – Tickets page.
+  Regular users: submit tickets, track status, and view their full history.
+  Agents (admin/technician): see all tickets and manage them (status, assignment,
+  resolution, comments) via the detail modal.
+-->
 <html lang="el">
 <head>
   <meta charset="UTF-8" />
@@ -11,24 +17,177 @@
   <div id="nav"></div>
 
   <main class="page">
-    <h1>Όλα τα Tickets</h1>
-    <div id="msg" class="msg"></div>
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Κατάσταση</th>
-          <th>Κατηγορία</th>
-          <th>Προτεραιότητα</th>
-          <th>Περιγραφή</th>
-          <th>Δημιουργός</th>
-          <th>Ανατέθηκε σε</th>
-          <th>Δημιουργήθηκε</th>
-        </tr>
-      </thead>
-      <tbody id="ticketRows"></tbody>
-    </table>
+    <h1 id="pageTitle">Τα Tickets μου</h1>
+
+    <!-- Agent view: all tickets, split into open/in_progress and closed -->
+    <section id="allSection">
+      <h2 class="section-title">Ανοιχτά Αιτήματα</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Κατάσταση</th>
+            <th>Κατηγορία</th>
+            <th>Προτεραιότητα</th>
+            <th>Δημιουργός</th>
+            <th>Ανατέθηκε σε</th>
+            <th>Δημιουργήθηκε</th>
+            <th>Ενέργειες</th>
+          </tr>
+        </thead>
+        <tbody id="openAgentRows"></tbody>
+      </table>
+
+      <h2 class="section-title">Κλειστά Αιτήματα</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Κατάσταση</th>
+            <th>Κατηγορία</th>
+            <th>Προτεραιότητα</th>
+            <th>Δημιουργός</th>
+            <th>Ανατέθηκε σε</th>
+            <th>Δημιουργήθηκε</th>
+            <th>Ενέργειες</th>
+          </tr>
+        </thead>
+        <tbody id="closedAgentRows"></tbody>
+      </table>
+    </section>
+
+    <!-- User view: open + past -->
+    <section id="userSection" style="display:none">
+      <div class="section-head">
+        <h2 class="section-title">Ανοιχτά Αιτήματα</h2>
+        <button class="btn btn-solid" onclick="openCreateModal()">Νέο Αίτημα</button>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Κατάσταση</th>
+            <th>Κατηγορία</th>
+            <th>Προτεραιότητα</th>
+            <th>Δημιουργήθηκε</th>
+            <th>Ενέργειες</th>
+          </tr>
+        </thead>
+        <tbody id="openRows"></tbody>
+      </table>
+
+      <h2 class="section-title">Προηγούμενα Αιτήματα</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Κατάσταση</th>
+            <th>Κατηγορία</th>
+            <th>Προτεραιότητα</th>
+            <th>Δημιουργήθηκε</th>
+            <th>Ενέργειες</th>
+          </tr>
+        </thead>
+        <tbody id="pastRows"></tbody>
+      </table>
+    </section>
   </main>
+
+  <!-- Create ticket modal -->
+  <div id="createOverlay" class="overlay" onclick="if (event.target === this) closeModalById('createOverlay')">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModalById('createOverlay')">&times;</button>
+      <h2>Νέο Αίτημα Υποστήριξης</h2>
+      <form id="createForm" onsubmit="submitCreate(event)">
+        <div class="field">
+          <label for="category">Κατηγορία προβλήματος</label>
+          <select id="category" name="category_id" required></select>
+        </div>
+        <div class="field">
+          <label for="description">Περιγραφή προβλήματος</label>
+          <textarea id="description" name="description" rows="4" required></textarea>
+        </div>
+        <div class="field">
+          <label for="attachment">Συνημμένο αρχείο (εικόνα, έως 5MB)</label>
+          <input type="file" id="attachment" name="attachment" accept="image/*" />
+        </div>
+        <button type="submit" class="btn btn-solid btn-block">Υποβολή</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Ticket detail modal -->
+  <div id="detailOverlay" class="overlay" onclick="if (event.target === this) closeModalById('detailOverlay')">
+    <div class="modal modal-lg">
+      <button class="modal-close" onclick="closeModalById('detailOverlay')">&times;</button>
+      <h2>Αίτημα #<span id="detailId"></span></h2>
+      <dl class="detail-list">
+        <dt>Κατάσταση</dt><dd id="detailStatus"></dd>
+        <dt>Κατηγορία</dt><dd id="detailCategory"></dd>
+        <dt>Προτεραιότητα</dt><dd id="detailPriority"></dd>
+        <dt>Δημιουργός</dt><dd id="detailCreator"></dd>
+        <dt>Ανατέθηκε σε</dt><dd id="detailAssignee"></dd>
+        <dt>Δημιουργήθηκε</dt><dd id="detailCreated"></dd>
+      </dl>
+      <div class="field">
+        <label>Περιγραφή</label>
+        <p id="detailDesc" class="detail-desc"></p>
+      </div>
+
+      <!-- Agent-only management panel -->
+      <div id="agentPanel" style="display:none">
+        <h3>Διαχείριση</h3>
+        <div class="field">
+          <label for="detailStatusInput">Κατάσταση</label>
+          <select id="detailStatusInput">
+            <option value="open">open</option>
+            <option value="in_progress">in progress</option>
+            <option value="closed">closed</option>
+          </select>
+        </div>
+        <div class="field" id="assignField" style="display:none">
+          <label for="detailAssigneeInput">Ανάθεση σε τεχνικό</label>
+          <select id="detailAssigneeInput"></select>
+        </div>
+        <div class="field">
+          <label for="detailResolutionInput">Λύση</label>
+          <textarea id="detailResolutionInput" rows="3"></textarea>
+        </div>
+        <button class="btn btn-solid" onclick="saveTicketChanges()">Αποθήκευση αλλαγών</button>
+      </div>
+
+      <!-- Resolution (read-only for non-agents) -->
+      <div class="field" id="resolutionReadonly" style="display:none">
+        <label>Λύση</label>
+        <p id="detailResolution" class="detail-desc"></p>
+      </div>
+
+      <div class="field">
+        <label>Συνημμένα</label>
+        <div id="detailAttachments"></div>
+      </div>
+
+      <div class="field">
+        <label>Σχόλια</label>
+        <div id="detailComments" class="comments"></div>
+        <div id="commentBox" style="display:none; margin-top:10px">
+          <textarea id="commentInput" rows="2" placeholder="Προσθήκη σχολίου…"></textarea>
+          <button class="btn btn-outline" onclick="addComment()">Προσθήκη σχολίου</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attachment viewer modal -->
+  <div id="attachmentOverlay" class="overlay" onclick="if (event.target === this) closeModalById('attachmentOverlay')">
+    <div class="modal modal-img">
+      <button class="modal-close" onclick="closeModalById('attachmentOverlay')">&times;</button>
+      <img id="attachmentImg" src="" alt="Συνημμένο" class="attachment-full" />
+      <div class="modal-actions">
+        <a id="attachmentDownload" class="btn btn-solid" download>Λήψη</a>
+      </div>
+    </div>
+  </div>
 
   <script src="../js/common.js"></script>
   <script src="../js/dashboard.js"></script>

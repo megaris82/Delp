@@ -1,18 +1,29 @@
+// users.html logic: admin user management (list, edit, delete) and registration approval.
+// Also loads the country/city dropdowns (from the external API) for the edit form.
+
+// Ensure only admins can access this page.
 const user = requireAuth(["admin"]);
+// Cache of users by id (for the edit dialog).
 let usersById = {};
+// Cache of country -> [cities] for the edit form.
 const cities = {};
+// Whether the country list has finished loading.
 let countriesLoaded = false;
+// Pending country/city selection to apply once countries are loaded.
 const pendingSelection = {};
 
+// On load: build nav, load users and countries.
 if (user) {
   mountNav(user);
   loadUsers();
   loadCountries();
 }
 
+// Reload the user table when the role/status filters change.
 document.getElementById("filterRole").addEventListener("change", loadUsers);
 document.getElementById("filterStatus").addEventListener("change", loadUsers);
 
+// Fetch countries from the external API and fill the country <select>.
 function loadCountries() {
   const country = document.getElementById("country");
   if (country.options.length > 1) {
@@ -46,6 +57,7 @@ function loadCountries() {
     });
 }
 
+// Refill the city <select> when the country changes.
 function onCountryChange() {
   const country = document.getElementById("country");
   const city = document.getElementById("city");
@@ -64,12 +76,14 @@ function onCountryChange() {
   city.disabled = list.length === 0;
 }
 
+// Display a message as a modal popup only.
 function setMsg(text, type) {
-  const msg = document.getElementById("msg");
-  msg.textContent = text;
-  msg.className = type ? "msg " + type : "msg";
+  if (text) {
+    notify(text, type);
+  }
 }
 
+// Load users from the API, applying the role/status filters, and render the table.
 function loadUsers() {
   const role = document.getElementById("filterRole").value;
   const status = document.getElementById("filterStatus").value;
@@ -112,6 +126,7 @@ function loadUsers() {
     });
 }
 
+// Open the edit dialog for a user, pre-filling their data (and country/city).
 function editUser(id) {
   const u = usersById[id];
   if (!u) {
@@ -124,6 +139,7 @@ function editUser(id) {
   document.getElementById("email").value = u.email || "";
   document.getElementById("address").value = u.address || "";
   if (!countriesLoaded) {
+    // Remember the selection and apply it once the country list is ready.
     pendingSelection.country = u.country || "";
     pendingSelection.city = u.city || "";
   } else {
@@ -136,6 +152,7 @@ function editUser(id) {
   openModalById("userOverlay");
 }
 
+// Save edits (including role and registration status = approval/rejection).
 function saveUser(e) {
   e.preventDefault();
   const id = document.getElementById("userId").value;
@@ -164,6 +181,7 @@ function saveUser(e) {
     });
 }
 
+// Delete a user (with confirmation).
 function deleteUser(id) {
   confirmDialog("Διαγραφή χρήστη;", function () {
     api("/api/users/" + id, { method: "DELETE" })
@@ -180,6 +198,7 @@ function deleteUser(id) {
   });
 }
 
+// Extract a human-readable error message from an API response.
 function errorText(data) {
   if (data && Array.isArray(data.details) && data.details.length) {
     return data.details.join(" • ");
