@@ -1,4 +1,4 @@
-// Announcement controller (admin only for mutations).
+// Announcement controller (admin only for mutations)
 const {
   findAll,
   findById,
@@ -7,7 +7,7 @@ const {
   remove,
 } = require("../models/announcementModel");
 
-// Validate an announcement payload (title required).
+// Validate an announcement payload (title required)
 function validate(body) {
   const errors = [];
   const title = body && typeof body.title === "string" ? body.title.trim() : "";
