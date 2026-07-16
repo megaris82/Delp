@@ -8,13 +8,6 @@ if (user) {
   loadAnnouncements();
 }
 
-// Display a message as a modal popup only.
-function setMsg(text, type) {
-  if (text) {
-    notify(text, type);
-  }
-}
-
 // Load and render all announcements.
 function loadAnnouncements() {
   api("/api/announcements")
@@ -38,6 +31,6 @@ function loadAnnouncements() {
       list.innerHTML = html;
     })
     .catch(function () {
-      setMsg("Αδυναμία φόρτωσης ανακοινώσεων.", "error");
+      notify("Αδυναμία φόρτωσης ανακοινώσεων.", "error");
     });
 }

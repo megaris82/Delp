@@ -12,8 +12,10 @@ const pool = mysql.createPool({
   user: process.env.DB_USER || "helpdesk",
   password: process.env.DB_PASSWORD || "helpdeskpass",
   database: process.env.DB_NAME || "helpdesk",
-  timezone: "Europe/Athens", // store/retrieve datetimes in the app's local timezone
   dateStrings: true,         // return DATE/DATETIME columns as strings instead of JS Date objects
+                             // (no `timezone` option: mysql2 only accepts offsets, and with
+                             //  dateStrings the raw server value is passed through unchanged,
+                             //  so the DB's Europe/Athens zone is what matters)
   waitForConnections: true,  // queue requests when all connections are in use
   connectionLimit: 10,       // maximum number of connections kept in the pool
 });

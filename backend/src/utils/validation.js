@@ -5,6 +5,9 @@
 const MIN_USERNAME_LENGTH = 3;
 const MIN_PASSWORD_LENGTH = 6;
 
+// Shared email pattern (also reused by userController for profile updates).
+const EMAIL_REGEX = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
 // Validate the payload of a registration (sign-up) request.
 function validateRegister(body) {
   const errors = [];
@@ -25,7 +28,7 @@ function validateRegister(body) {
   if (!password || typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH) {
     errors.push(`password is required (min ${MIN_PASSWORD_LENGTH} characters)`);
   }
-  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+  if (email && !EMAIL_REGEX.test(email)) {
     errors.push("email must be a valid address");
   }
 
@@ -63,4 +66,4 @@ function validateLogin(body) {
   return { errors, value: { username, password } };
 }
 
-module.exports = { validateRegister, validateLogin };
+module.exports = { validateRegister, validateLogin, EMAIL_REGEX };

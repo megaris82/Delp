@@ -6,8 +6,7 @@ const {
   update,
   remove,
 } = require("../models/categoryModel");
-
-const PRIORITIES = ["low", "medium", "high"];
+const { PRIORITIES } = require("../utils/constants");
 
 // Validate a category payload (name required, priority must be valid).
 function validate(body) {

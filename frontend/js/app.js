@@ -12,13 +12,6 @@ let mode = "login";
 // Cache of country -> [cities] so we don't re-fetch cities on every country change.
 const cities = {};
 
-// Show a message as a modal popup only (type: "", "error", "info", "ok").
-function showMsg(text, type) {
-  if (text) {
-    notify(text, type);
-  }
-}
-
 // Switch between login and register mode and update the UI accordingly.
 function setMode(next) {
   mode = next;
@@ -46,8 +39,6 @@ function setMode(next) {
     title.textContent = "Εγγραφή";
     submitBtn.textContent = "Εγγραφή";
   }
-
-  showMsg("", "");
 
   if (!isLogin) {
     loadCountries();
@@ -87,7 +78,7 @@ function loadCountries() {
       }
     })
     .catch(function () {
-      showMsg("Αδυναμία φόρτωσης χωρών.", "error");
+      notify("Αδυναμία φόρτωσης χωρών.", "error");
     });
 }
 
@@ -113,7 +104,6 @@ function onCountryChange() {
 // Submit the login or registration form.
 function submitForm(e) {
   e.preventDefault();
-  showMsg("", "");
 
   const username = document.getElementById("username").value;
   const password = document.getElementById("password").value;
@@ -133,13 +123,13 @@ function submitForm(e) {
 
     // Client-side password strength check (mirrors the backend minimum length).
     if (payload.password.length < 6) {
-      showMsg("Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες.", "error");
+      notify("Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες.", "error");
       return;
     }
 
     const confirmPass = document.getElementById("confirm").value;
     if (payload.password !== confirmPass) {
-      showMsg("Τα password δεν ταιριάζουν.", "error");
+      notify("Τα password δεν ταιριάζουν.", "error");
       return;
     }
   }
@@ -175,7 +165,7 @@ function submitForm(e) {
           notify(text, "error");
           return;
         }
-        showMsg(text, "error");
+        notify(text, "error");
         return;
       }
       if (mode === "register") {
@@ -185,11 +175,10 @@ function submitForm(e) {
         // On successful login, store the token + user and go to the dashboard.
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
-        showMsg("Συνδεθήκατε!", "ok");
         window.location.href = "html/dashboard.html";
       }
     })
     .catch(function () {
-      showMsg("Σφάλμα δικτύου.", "error");
+      notify("Σφάλμα δικτύου.", "error");
     });
 }

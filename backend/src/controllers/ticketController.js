@@ -1,6 +1,5 @@
 // Ticket controller: listing, creation and agent updates (status / assignment / resolution).
 const {
-  STATUSES,
   findAll,
   findMine,
   findById,
@@ -12,6 +11,7 @@ const {
   findAttachmentsByTickets,
 } = require("../models/ticketModel");
 const { findById: findUserById } = require("../models/userModel");
+const { TICKET_STATUSES } = require("../utils/constants");
 
 // Attach the file paths of their attachments to a list of ticket objects.
 function mergeAttachments(tickets, attachments) {
@@ -69,7 +69,7 @@ async function createTicket(req, res, next) {
     // If a file was uploaded (handled by the multer middleware), record it.
     let file_path = null;
     if (req.file) {
-      file_path = "/uploads/" + req.file.filename;
+      file_path = "/api/uploads/" + req.file.filename;
       await addAttachment({
         ticket_id: ticketId,
         uploaded_by: req.user.id,
@@ -104,8 +104,8 @@ async function updateTicket(req, res, next) {
     const { status, assigned_to, resolution } = req.body;
 
     if (status !== undefined) {
-      if (!STATUSES.includes(status)) {
-        errors.push("status must be one of " + STATUSES.join(", "));
+      if (!TICKET_STATUSES.includes(status)) {
+        errors.push("status must be one of " + TICKET_STATUSES.join(", "));
       }
     }
     if (assigned_to !== undefined) {

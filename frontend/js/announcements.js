@@ -14,13 +14,6 @@ if (user) {
   loadAnnouncements();
 }
 
-// Display a message as a modal popup only.
-function setMsg(text, type) {
-  if (text) {
-    notify(text, type);
-  }
-}
-
 // Load announcements and render them; admins also see edit/delete actions.
 function loadAnnouncements() {
   api("/api/announcements")
@@ -53,7 +46,7 @@ function loadAnnouncements() {
       list.innerHTML = html;
     })
     .catch(function () {
-      setMsg("Αδυναμία φόρτωσης ανακοινώσεων.", "error");
+      notify("Αδυναμία φόρτωσης ανακοινώσεων.", "error");
     });
 }
 
@@ -78,15 +71,15 @@ function saveAnnouncementEdit(e) {
   api("/api/announcements/" + id, { method: "PUT", body: payload })
     .then(function (res) {
       if (res.status !== 200) {
-        setMsg(errorText(res.data), "error");
+        notify(errorText(res.data), "error");
         return;
       }
       closeModalById("announcementEditOverlay");
-      setMsg("Αποθηκεύτηκε.", "ok");
+      notify("Αποθηκεύτηκε.", "ok");
       loadAnnouncements();
     })
     .catch(function () {
-      setMsg("Σφάλμα δικτύου.", "error");
+      notify("Σφάλμα δικτύου.", "error");
     });
 }
 
@@ -104,10 +97,10 @@ function saveAnnouncement(e) {
   api(path, { method: method, body: payload })
     .then(function (res) {
       if (res.status !== 200 && res.status !== 201) {
-        setMsg(errorText(res.data), "error");
+        notify(errorText(res.data), "error");
         return;
       }
-      setMsg("Αποθηκεύτηκε.", "ok");
+      notify("Αποθηκεύτηκε.", "ok");
       // Reset the side-panel create form for the next entry.
       document.getElementById("announcementModalTitle").textContent = "Νέα Ανακοίνωση";
       document.getElementById("announcementId").value = "";
@@ -117,7 +110,7 @@ function saveAnnouncement(e) {
       loadAnnouncements();
     })
     .catch(function () {
-      setMsg("Σφάλμα δικτύου.", "error");
+      notify("Σφάλμα δικτύου.", "error");
     });
 }
 
@@ -127,21 +120,13 @@ function deleteAnnouncement(id) {
     api("/api/announcements/" + id, { method: "DELETE" })
       .then(function (res) {
         if (res.status !== 200) {
-          setMsg(errorText(res.data), "error");
+          notify(errorText(res.data), "error");
           return;
         }
         loadAnnouncements();
       })
       .catch(function () {
-        setMsg("Σφάλμα δικτύου.", "error");
+        notify("Σφάλμα δικτύου.", "error");
       });
   });
-}
-
-// Extract a human-readable error message from an API response.
-function errorText(data) {
-  if (data && Array.isArray(data.details) && data.details.length) {
-    return data.details.join(" • ");
-  }
-  return (data && (data.error || data.message)) || "Κάτι πήγε στραβά.";
 }

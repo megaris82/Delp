@@ -23,6 +23,7 @@ services:
   db:
     image: mysql:8.0
     container_name: Delp-db
+    command: --default-time-zone=Europe/Athens
     environment:
       - TZ=Europe/Athens
       - MYSQL_ROOT_PASSWORD=rootpass

@@ -13,7 +13,7 @@ async function list(req, res, next) {
     }
 
     const isAgent = req.user.role === "admin" || req.user.role === "technician";
-    if (!isAgent && ticket.created_by !== req.user.username) {
+    if (!isAgent && ticket.created_by_name !== req.user.username) {
       return res.status(403).json({ error: "Forbidden" });
     }
 

@@ -53,7 +53,7 @@ function loadCountries() {
       }
     })
     .catch(function () {
-      setMsg("Αδυναμία φόρτωσης χωρών.", "error");
+      notify("Αδυναμία φόρτωσης χωρών.", "error");
     });
 }
 
@@ -74,13 +74,6 @@ function onCountryChange() {
     city.appendChild(opt);
   }
   city.disabled = list.length === 0;
-}
-
-// Display a message as a modal popup only.
-function setMsg(text, type) {
-  if (text) {
-    notify(text, type);
-  }
 }
 
 // Load users from the API, applying the role/status filters, and render the table.
@@ -122,7 +115,7 @@ function loadUsers() {
       rows.innerHTML = html;
     })
     .catch(function () {
-      setMsg("Αδυναμία φόρτωσης χρηστών.", "error");
+      notify("Αδυναμία φόρτωσης χρηστών.", "error");
     });
 }
 
@@ -169,15 +162,15 @@ function saveUser(e) {
   api("/api/users/" + id, { method: "PUT", body: payload })
     .then(function (res) {
       if (res.status !== 200) {
-        setMsg(errorText(res.data), "error");
+        notify(errorText(res.data), "error");
         return;
       }
       closeModalById("userOverlay");
-      setMsg("Αποθηκεύτηκε.", "ok");
+      notify("Αποθηκεύτηκε.", "ok");
       loadUsers();
     })
     .catch(function () {
-      setMsg("Σφάλμα δικτύου.", "error");
+      notify("Σφάλμα δικτύου.", "error");
     });
 }
 
@@ -187,21 +180,13 @@ function deleteUser(id) {
     api("/api/users/" + id, { method: "DELETE" })
       .then(function (res) {
         if (res.status !== 200) {
-          setMsg(errorText(res.data), "error");
+          notify(errorText(res.data), "error");
           return;
         }
         loadUsers();
       })
       .catch(function () {
-        setMsg("Σφάλμα δικτύου.", "error");
+        notify("Σφάλμα δικτύου.", "error");
       });
   });
-}
-
-// Extract a human-readable error message from an API response.
-function errorText(data) {
-  if (data && Array.isArray(data.details) && data.details.length) {
-    return data.details.join(" • ");
-  }
-  return (data && (data.error || data.message)) || "Κάτι πήγε στραβά.";
 }

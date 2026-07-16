@@ -13,16 +13,15 @@ const COLUMNS = `
     t.updated_at,
     c.name AS category,
     c.priority AS priority,
-    creator.username AS created_by,
-    assignee.username AS assigned_to
+    creator.username AS created_by_name,
+    creator.id       AS created_by_id,
+    assignee.username AS assigned_to_name,
+    assignee.id       AS assigned_to_id
   FROM tickets t
   LEFT JOIN categories c ON t.category_id = c.id
   LEFT JOIN users creator ON t.created_by = creator.id
   LEFT JOIN users assignee ON t.assigned_to = assignee.id
 `;
-
-// Allowed ticket statuses (used for validation in the controller).
-const STATUSES = ["open", "in_progress", "closed"];
 
 // Return every ticket (used by admins / technicians).
 async function findAll() {
@@ -111,14 +110,13 @@ async function findAttachmentByFilename(filename) {
     `SELECT a.ticket_id AS ticket_id, t.created_by AS created_by
      FROM attachments a
      JOIN tickets t ON a.ticket_id = t.id
-     WHERE a.file_path LIKE ?`,
-    ["%/" + filename]
+     WHERE a.file_path = ?`,
+    ["/api/uploads/" + filename]
   );
   return rows[0] || null;
 }
 
 module.exports = {
-  STATUSES,
   findAll,
   findMine,
   findById,

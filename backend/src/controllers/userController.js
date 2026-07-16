@@ -2,9 +2,8 @@
 // Supports listing users (with optional filters), updating a user's profile /
 // role / registration status, and deleting a user.
 const { findAll, findById, update, remove, countAdmins } = require("../models/userModel");
-
-const ROLES = ["user", "technician", "admin"];
-const STATUSES = ["pending", "denied", "accepted"];
+const { ROLES, REGISTER_STATUSES } = require("../utils/constants");
+const { EMAIL_REGEX } = require("../utils/validation");
 
 // GET /api/users  (admin, technician)
 // List users, optionally filtered by ?role=... and/or ?register_status=...
@@ -18,7 +17,7 @@ async function list(req, res, next) {
       filters.role = req.query.role;
     }
     if (req.query.register_status) {
-      if (!STATUSES.includes(req.query.register_status)) {
+      if (!REGISTER_STATUSES.includes(req.query.register_status)) {
         return res.status(400).json({ error: "Invalid register_status filter" });
       }
       filters.register_status = req.query.register_status;
@@ -56,7 +55,7 @@ async function updateUser(req, res, next) {
     if (!ROLES.includes(role)) {
       errors.push("role must be one of user, technician, admin");
     }
-    if (!STATUSES.includes(register_status)) {
+    if (!REGISTER_STATUSES.includes(register_status)) {
       errors.push("register_status must be one of pending, denied, accepted");
     }
 
@@ -68,7 +67,7 @@ async function updateUser(req, res, next) {
     const city = req.body.city !== undefined ? req.body.city : existing.city;
     const email = req.body.email !== undefined ? req.body.email : existing.email;
 
-    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    if (email && !EMAIL_REGEX.test(email)) {
       errors.push("email must be a valid address");
     }
 

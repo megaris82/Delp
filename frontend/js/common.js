@@ -33,7 +33,7 @@ function requireAuth(allowedRoles) {
     return null;
   }
   if (allowedRoles && allowedRoles.indexOf(user.role) === -1) {
-    window.location.href = "dashboard.html";
+      window.location.href = "../dashboard.html";
     return null;
   }
   return user;
@@ -212,4 +212,12 @@ function closeNotify() {
   if (overlay) {
     overlay.className = "overlay";
   }
+}
+
+// Extract a human-readable error message from an API response.
+function errorText(data) {
+  if (data && Array.isArray(data.details) && data.details.length) {
+    return data.details.join(" • ");
+  }
+  return (data && (data.error || data.message)) || "Κάτι πήγε στραβά.";
 }

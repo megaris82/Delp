@@ -9,13 +9,6 @@ if (user) {
   loadCategories();
 }
 
-// Display a message as a modal popup only.
-function setMsg(text, type) {
-  if (text) {
-    notify(text, type);
-  }
-}
-
 // Load categories from the API and render the table.
 function loadCategories() {
   api("/api/categories")
@@ -45,7 +38,7 @@ function loadCategories() {
       rows.innerHTML = html;
     })
     .catch(function () {
-      setMsg("Αδυναμία φόρτωσης κατηγοριών.", "error");
+      notify("Αδυναμία φόρτωσης κατηγοριών.", "error");
     });
 }
 
@@ -78,15 +71,15 @@ function saveCategoryEdit(e) {
   api("/api/categories/" + id, { method: "PUT", body: payload })
     .then(function (res) {
       if (res.status !== 200) {
-        setMsg(errorText(res.data), "error");
+        notify(errorText(res.data), "error");
         return;
       }
       closeModalById("categoryEditOverlay");
-      setMsg("Αποθηκεύτηκε.", "ok");
+      notify("Αποθηκεύτηκε.", "ok");
       loadCategories();
     })
     .catch(function () {
-      setMsg("Σφάλμα δικτύου.", "error");
+      notify("Σφάλμα δικτύου.", "error");
     });
 }
 
@@ -104,15 +97,15 @@ function saveCategory(e) {
   api(path, { method: method, body: payload })
     .then(function (res) {
       if (res.status !== 200 && res.status !== 201) {
-        setMsg(errorText(res.data), "error");
+        notify(errorText(res.data), "error");
         return;
       }
-      setMsg("Αποθηκεύτηκε.", "ok");
+      notify("Αποθηκεύτηκε.", "ok");
       openCategoryModal();
       loadCategories();
     })
     .catch(function () {
-      setMsg("Σφάλμα δικτύου.", "error");
+      notify("Σφάλμα δικτύου.", "error");
     });
 }
 
@@ -122,21 +115,13 @@ function deleteCategory(id) {
     api("/api/categories/" + id, { method: "DELETE" })
       .then(function (res) {
         if (res.status !== 200) {
-          setMsg(errorText(res.data), "error");
+          notify(errorText(res.data), "error");
           return;
         }
         loadCategories();
       })
       .catch(function () {
-        setMsg("Σφάλμα δικτύου.", "error");
+        notify("Σφάλμα δικτύου.", "error");
       });
   });
-}
-
-// Extract a human-readable error message from an API response.
-function errorText(data) {
-  if (data && Array.isArray(data.details) && data.details.length) {
-    return data.details.join(" • ");
-  }
-  return (data && (data.error || data.message)) || "Κάτι πήγε στραβά.";
 }

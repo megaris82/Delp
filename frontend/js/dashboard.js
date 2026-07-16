@@ -10,6 +10,8 @@ const OPEN_STATUSES = ["open", "in_progress"];
 const PAST_STATUSES = ["closed"];
 // Local cache of tickets by id for quick lookups when opening the detail modal.
 let ticketsById = {};
+// Object URL for the currently previewed attachment (revoked when a new one is opened).
+let attachmentObjUrl = null;
 
 // On page load: build the nav and fetch tickets (and, for users, the category list).
 if (user) {
@@ -18,13 +20,6 @@ if (user) {
     loadCategories();
   }
   loadTickets();
-}
-
-// Display a message as a modal popup only (type: "", "error", "ok", "info").
-function setMsg(text, type) {
-  if (text) {
-    notify(text, type);
-  }
 }
 
 // Is the current user an agent (admin or technician)?
@@ -65,7 +60,7 @@ function loadTickets() {
       }
     })
     .catch(function () {
-      setMsg("Αδυναμία φόρτωσης tickets.", "error");
+      notify("Αδυναμία φόρτωσης tickets.", "error");
     });
 }
 
@@ -115,12 +110,12 @@ function buildAgentRows(tickets) {
       "<tr>" +
       "<td>" + t.id + "</td>" +
       "<td>" + escapeHtml(statusLabel(t.status)) + "</td>" +
-      "<td>" + escapeHtml(t.category) + "</td>" +
-      "<td>" + escapeHtml(t.priority) + "</td>" +
-      "<td>" + escapeHtml(t.created_by) + "</td>" +
-      "<td>" + escapeHtml(t.assigned_to) + "</td>" +
-      "<td>" + escapeHtml(t.created_at) + "</td>" +
-      openCell(t.id) +
+       "<td>" + escapeHtml(t.category) + "</td>" +
+       "<td>" + escapeHtml(t.priority) + "</td>" +
+       "<td>" + escapeHtml(t.created_by_name) + "</td>" +
+       "<td>" + escapeHtml(t.assigned_to_name) + "</td>" +
+       "<td>" + escapeHtml(t.created_at) + "</td>" +
+       openCell(t.id) +
       "</tr>";
   }
   return html;
@@ -182,8 +177,8 @@ function renderTicketInfo(t) {
   document.getElementById("detailStatus").textContent = statusLabel(t.status);
   document.getElementById("detailCategory").textContent = t.category || "";
   document.getElementById("detailPriority").textContent = t.priority || "";
-  document.getElementById("detailCreator").textContent = t.created_by || "";
-  document.getElementById("detailAssignee").textContent = t.assigned_to || "";
+  document.getElementById("detailCreator").textContent = t.created_by_name || "";
+  document.getElementById("detailAssignee").textContent = t.assigned_to_name || "";
   document.getElementById("detailCreated").textContent = t.created_at || "";
   document.getElementById("detailDesc").textContent = t.description || "";
   document.getElementById("detailResolution").textContent = t.resolution || "";
@@ -223,12 +218,8 @@ function openTicket(id) {
   if (agent) {
     document.getElementById("detailStatusInput").value = t.status || "open";
     document.getElementById("detailResolutionInput").value = resolution;
-    if (user.role === "admin" || user.role === "technician") {
-      document.getElementById("assignField").style.display = "";
-      loadTechnicians(t.assigned_to);
-    } else {
-      document.getElementById("assignField").style.display = "none";
-    }
+    document.getElementById("assignField").style.display = "";
+    loadTechnicians(t.assigned_to_id);
   }
 
   loadComments(id);
@@ -264,14 +255,14 @@ function saveTicketChanges() {
     status: document.getElementById("detailStatusInput").value,
     resolution: document.getElementById("detailResolutionInput").value,
   };
-  if (user.role === "admin" || user.role === "technician") {
+  if (isAgent()) {
     const assignVal = document.getElementById("detailAssigneeInput").value;
     payload.assigned_to = assignVal === "" ? null : Number(assignVal);
   }
   api("/api/tickets/" + id, { method: "PATCH", body: payload })
     .then(function (res) {
       if (res.status !== 200) {
-        setMsg(errorText(res.data), "error");
+        notify(errorText(res.data), "error");
         return;
       }
       ticketsById[id] = res.data.ticket;
@@ -279,11 +270,11 @@ function saveTicketChanges() {
       const resolution = ticketsById[id].resolution || "";
       document.getElementById("resolutionReadonly").style.display =
         isAgent() ? "none" : resolution ? "" : "none";
-      setMsg("Οι αλλαγές αποθηκεύτηκαν.", "ok");
+      notify("Οι αλλαγές αποθηκεύτηκαν.", "ok");
       loadTickets();
     })
     .catch(function () {
-      setMsg("Σφάλμα δικτύου κατά την αποθήκευση.", "error");
+      notify("Σφάλμα δικτύου κατά την αποθήκευση.", "error");
     });
 }
 
@@ -324,14 +315,14 @@ function addComment() {
   api("/api/tickets/" + id + "/comments", { method: "POST", body: { body: body } })
     .then(function (res) {
       if (res.status !== 201) {
-        setMsg(errorText(res.data), "error");
+        notify(errorText(res.data), "error");
         return;
       }
       input.value = "";
       loadComments(id);
     })
     .catch(function () {
-      setMsg("Σφάλμα δικτύου κατά την προσθήκη σχολίου.", "error");
+      notify("Σφάλμα δικτύου κατά την προσθήκη σχολίου.", "error");
     });
 }
 
@@ -349,7 +340,7 @@ function loadCategories() {
       select.innerHTML = html;
     })
     .catch(function () {
-      setMsg("Αδυναμία φόρτωσης κατηγοριών.", "error");
+      notify("Αδυναμία φόρτωσης κατηγοριών.", "error");
     });
 }
 
@@ -366,11 +357,11 @@ function submitCreate(e) {
   const formData = new FormData(form);
 
   if (!formData.get("category_id")) {
-    setMsg("Επιλέξτε κατηγορία.", "error");
+    notify("Επιλέξτε κατηγορία.", "error");
     return;
   }
   if (!formData.get("description").trim()) {
-    setMsg("Η περιγραφή είναι υποχρεωτική.", "error");
+    notify("Η περιγραφή είναι υποχρεωτική.", "error");
     return;
   }
 
@@ -378,7 +369,7 @@ function submitCreate(e) {
   const fileInput = form.querySelector("#attachment");
   if (fileInput && fileInput.files && fileInput.files[0]) {
     if (fileInput.files[0].size > 5 * 1024 * 1024) {
-      setMsg("Το αρχείο υπερβαίνει το μέγιστο μέγεθος (5MB).", "error");
+      notify("Το αρχείο υπερβαίνει το μέγιστο μέγεθος (5MB).", "error");
       return;
     }
   }
@@ -386,15 +377,15 @@ function submitCreate(e) {
   api("/api/tickets", { method: "POST", body: formData })
     .then(function (res) {
       if (res.status !== 201) {
-        setMsg(errorText(res.data), "error");
+        notify(errorText(res.data), "error");
         return;
       }
       closeModalById("createOverlay");
-      setMsg("Το αίτημα υποβλήθηκε.", "ok");
+      notify("Το αίτημα υποβλήθηκε.", "ok");
       loadTickets();
     })
     .catch(function () {
-      setMsg("Σφάλμα δικτύου κατά την υποβολή.", "error");
+      notify("Σφάλμα δικτύου κατά την υποβολή.", "error");
     });
 }
 
@@ -404,7 +395,7 @@ function submitCreate(e) {
 function viewAttachment(id, index) {
   const t = ticketsById[id];
   if (!t || !t.attachments || !t.attachments[index]) {
-    setMsg("Το συνημμένο δεν βρέθηκε.", "error");
+    notify("Το συνημμένο δεν βρέθηκε.", "error");
     return;
   }
   const filename = t.attachments[index].split("/").pop();
@@ -414,7 +405,7 @@ function viewAttachment(id, index) {
   })
     .then(function (res) {
       if (!res.ok) {
-        setMsg("Σφάλμα φόρτωσης συνημμένου.", "error");
+        notify("Σφάλμα φόρτωσης συνημμένου.", "error");
         return null;
       }
       return res.blob();
@@ -423,27 +414,21 @@ function viewAttachment(id, index) {
       if (!blob) {
         return;
       }
-      const objUrl = URL.createObjectURL(blob);
+      // Revoke the previous object URL (if any) before creating a new one, so the
+      // blob stays valid for both the preview <img> and the download <a> while the
+      // modal is open. Revoking immediately on img load was breaking downloads.
+      if (attachmentObjUrl) {
+        URL.revokeObjectURL(attachmentObjUrl);
+      }
+      attachmentObjUrl = URL.createObjectURL(blob);
       const img = document.getElementById("attachmentImg");
-      // Revoke the previous object URL once the new image has loaded.
-      img.onload = function () {
-        URL.revokeObjectURL(objUrl);
-      };
-      img.src = objUrl;
+      img.src = attachmentObjUrl;
       const link = document.getElementById("attachmentDownload");
-      link.href = objUrl;
+      link.href = attachmentObjUrl;
       link.download = filename;
       openModalById("attachmentOverlay");
     })
     .catch(function () {
-      setMsg("Σφάλμα δικτύου.", "error");
+      notify("Σφάλμα δικτύου.", "error");
     });
-}
-
-// Extract a human-readable error message from an API response.
-function errorText(data) {
-  if (data && Array.isArray(data.details) && data.details.length) {
-    return data.details.join(" • ");
-  }
-  return (data && (data.error || data.message)) || "Κάτι πήγε στραβά.";
 }
