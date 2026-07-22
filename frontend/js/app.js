@@ -1,18 +1,18 @@
-// index.html logic: login / registration modal, and country/city dropdowns
-// populated from the external CountriesNow REST API.
+// Logic for index.html: the login/registration modal and the country/city
+// dropdowns that are filled from the CountriesNow API.
 
-// Endpoint paths for the two auth actions.
+// API endpoints for the two auth actions.
 const ENDPOINTS = {
   login: "/api/auth/login",
   register: "/api/auth/register",
 };
 
-// Current modal mode: "login" or "register".
+// Which mode the modal is in right now: "login" or "register".
 let mode = "login";
-// Cache of country -> [cities] so we don't re-fetch cities on every country change.
+// country -> list of cities, cached so we don't re-fetch on every country change.
 const cities = {};
 
-// Switch between login and register mode and update the UI accordingly.
+// Switch the modal between login and register, showing/hiding the extra fields.
 function setMode(next) {
   mode = next;
   const isLogin = next === "login";
@@ -45,7 +45,7 @@ function setMode(next) {
   }
 }
 
-// Open the modal in the given starting mode.
+// Open the modal in the given mode.
 function openModal(startMode) {
   setMode(startMode);
   document.getElementById("overlay").className = "overlay open";
@@ -56,7 +56,8 @@ function closeModal() {
   document.getElementById("overlay").className = "overlay";
 }
 
-// Fetch the list of countries from the external API and fill the country <select>.
+// Fetch the country list from the external API and fill the country <select>.
+// Only runs once; after that the options are already there.
 function loadCountries() {
   const country = document.getElementById("country");
   if (country.options.length > 1) {
@@ -101,7 +102,7 @@ function onCountryChange() {
   city.disabled = list.length === 0;
 }
 
-// Submit the login or registration form.
+// Submit the login or registration form depending on the current mode.
 function submitForm(e) {
   e.preventDefault();
 
@@ -121,7 +122,7 @@ function submitForm(e) {
     payload.city = document.getElementById("city").value;
     payload.address = document.getElementById("address").value;
 
-    // Client-side password strength check (mirrors the backend minimum length).
+    // Match the backend minimum password length before sending.
     if (payload.password.length < 6) {
       notify("Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες.", "error");
       return;
@@ -154,8 +155,8 @@ function submitForm(e) {
         } else {
           text = data.message || data.error || "Κάτι πήγε στραβά.";
         }
-        // A denied/pending registration is shown only as a modal popup,
-        // not as inline text at the bottom of the form.
+        // A denied/pending registration is shown as a popup so the user knows
+        // their account hasn't been approved yet.
         if (status === 403 && data.error && data.error.indexOf("Registration ") === 0) {
           if (data.error === "Registration denied") {
             text = "Η εγγραφή σας απορρίφθηκε.";
@@ -172,7 +173,7 @@ function submitForm(e) {
         notify("Το αίτημά σας υποβλήθηκε. Ο διαχειριστής θα το εξετάσει και θα αναθέσει ρόλο.", "info");
         setTimeout(closeModal, 5000);
       } else {
-        // On successful login, store the token + user and go to the dashboard.
+        // Save the token and user, then go to the dashboard.
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
         window.location.href = "html/dashboard.html";

@@ -1,21 +1,18 @@
-// Load environment variables (the JWT secret lives in .env).
 require("dotenv").config();
-
-// jsonwebtoken library used to sign and verify JWT access tokens.
 const jwt = require("jsonwebtoken");
 
-// Secret key used to sign tokens. Must match the value in the .env file.
+// Secret used to sign/verify tokens. Comes from .env.
 const JWT_SECRET = process.env.JWT_KEY;
-
-// Access tokens are valid for 12 hours.
+// How long a login token stays valid.
 const JWT_EXPIRES_IN = "12h";
 
-// Create (sign) a new JWT for the given payload (usually { id, username, role }).
+// Builds a signed JWT for the given user payload (id, username, role).
 function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 }
 
-// Verify a JWT and return its decoded payload. Throws if the token is invalid or expired.
+// Checks that a token is valid and returns its payload. Throws if it's
+// expired or tampered with.
 function verifyToken(token) {
   return jwt.verify(token, JWT_SECRET);
 }

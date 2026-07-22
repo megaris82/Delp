@@ -1,6 +1,5 @@
-// common.js – Shared helpers used by every authenticated page:
-// token/user storage, route guards, navigation rendering, an AJAX wrapper,
-// HTML escaping, and a reusable confirmation dialog.
+// Shared helpers used by every authenticated page: token/user storage, route
+// guards, the top nav, a fetch wrapper, HTML escaping, and the pop-up dialogs.
 
 // Read the JWT from localStorage.
 function getToken() {
@@ -16,15 +15,15 @@ function getUser() {
   }
 }
 
-// Clear stored session and return to the landing page.
+// Clear the session and go back to the landing page.
 function logout() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
   window.location.href = "../index.html";
 }
 
-// Guard: redirect to login if not authenticated, or to the dashboard if the
-// user's role is not in the allowed list. Returns the user or null.
+// Route guard. If there's no token, send to login. If the user's role isn't in
+// allowedRoles, send to the dashboard. Returns the user object or null.
 function requireAuth(allowedRoles) {
   const token = getToken();
   const user = getUser();
@@ -33,15 +32,15 @@ function requireAuth(allowedRoles) {
     return null;
   }
   if (allowedRoles && allowedRoles.indexOf(user.role) === -1) {
-      window.location.href = "../dashboard.html";
+    window.location.href = "../dashboard.html";
     return null;
   }
   return user;
 }
 
 // Build the top navigation HTML based on the user's role.
-//  - Everyone sees "Tickets" and "Ανακοινώσεις".
-//  - Admins additionally see "Χρήστες" and "Κατηγορίες".
+// Everyone sees "Tickets" and "Ανακοινώσεις"; admins also see "Χρήστες" and
+// "Κατηγορίες". Admins manage announcements, everyone else only views them.
 function renderNav(user) {
   const links = [{ label: "Tickets", href: "dashboard.html" }];
 
@@ -49,7 +48,6 @@ function renderNav(user) {
     links.push({ label: "Χρήστες", href: "users.html" });
     links.push({ label: "Κατηγορίες", href: "categories.html" });
   }
-  // Admins manage announcements; everyone else only views them.
   const announcementHref =
     user.role === "admin" ? "announcements.html" : "announcements-view.html";
   links.push({ label: "Ανακοινώσεις", href: announcementHref });
@@ -81,7 +79,7 @@ function renderNav(user) {
   );
 }
 
-// Inject the navigation into the #nav placeholder of the current page.
+// Inject the nav into the #nav placeholder on the current page.
 function mountNav(user) {
   const holder = document.getElementById("nav");
   if (holder) {
@@ -89,18 +87,17 @@ function mountNav(user) {
   }
 }
 
-// Show a modal overlay by id.
+// Show / hide a modal overlay by id.
 function openModalById(id) {
   document.getElementById(id).className = "overlay open";
 }
 
-// Hide a modal overlay by id.
 function closeModalById(id) {
   document.getElementById(id).className = "overlay";
 }
 
-// Thin fetch wrapper that injects the Bearer token, handles JSON/form bodies,
-// and auto-logs-out on 401. Returns { status, data }.
+// fetch wrapper: adds the Bearer token, serializes JSON bodies, and logs the
+// user out on a 401. Returns { status, data }.
 function api(path, options) {
   options = options || {};
   const headers = options.headers || {};
@@ -124,7 +121,8 @@ function api(path, options) {
   });
 }
 
-// Escape user-provided strings before inserting them into innerHTML (XSS protection).
+// Escape a string before putting it into innerHTML, so user input can't inject
+// HTML/script tags.
 function escapeHtml(value) {
   if (value === null || value === undefined) {
     return "";
@@ -136,10 +134,11 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;");
 }
 
-// Show a reusable confirm dialog. Calls onConfirm() when the user accepts.
+// Show a confirm dialog. Calls onConfirm() if the user clicks "Διαγραφή".
 function confirmDialog(message, onConfirm) {
   let overlay = document.getElementById("confirmOverlay");
   if (!overlay) {
+    // Build the dialog once, then reuse it.
     overlay = document.createElement("div");
     overlay.id = "confirmOverlay";
     overlay.className = "overlay";
@@ -159,6 +158,7 @@ function confirmDialog(message, onConfirm) {
     });
   }
   document.getElementById("confirmMessage").textContent = message;
+  // Replace the OK button so the previous click handler doesn't fire again.
   const okBtn = document.getElementById("confirmOk");
   const newOk = okBtn.cloneNode(true);
   okBtn.parentNode.replaceChild(newOk, okBtn);
@@ -177,9 +177,7 @@ function closeConfirm() {
   }
 }
 
-// Show a reusable notification modal (type: "", "error", "ok", "info").
-// Used to surface errors and confirmations as pop-up modals instead of
-// inline page text.
+// Show a notification popup. type can be "", "error", "ok", or "info".
 function notify(message, type) {
   let overlay = document.getElementById("notifyOverlay");
   if (!overlay) {
@@ -206,7 +204,7 @@ function notify(message, type) {
   overlay.className = "overlay open";
 }
 
-// Hide the notification modal.
+// Hide the notification popup.
 function closeNotify() {
   const overlay = document.getElementById("notifyOverlay");
   if (overlay) {
@@ -214,7 +212,8 @@ function closeNotify() {
   }
 }
 
-// Extract a human-readable error message from an API response.
+// Pull a readable error message out of an API response, preferring the
+// per-field details list when present.
 function errorText(data) {
   if (data && Array.isArray(data.details) && data.details.length) {
     return data.details.join(" • ");

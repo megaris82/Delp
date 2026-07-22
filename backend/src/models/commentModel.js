@@ -1,7 +1,6 @@
-// Data access layer for the "comments" table (resolution notes / actions on tickets).
 const { pool } = require("../db");
 
-// Return all comments for a given ticket, joined with the author's username and role.
+// All comments for a ticket, oldest first, with the author's username and role.
 async function findByTicket(ticket_id) {
   const [rows] = await pool.query(
     `SELECT c.id, c.body, c.created_at, u.username AS author, u.role AS author_role
@@ -14,7 +13,7 @@ async function findByTicket(ticket_id) {
   return rows;
 }
 
-// Create a comment and return the freshly inserted row (with author info joined).
+// Create a comment, then fetch it back with the author info joined in.
 async function create({ ticket_id, user_id, body }) {
   const [result] = await pool.query(
     `INSERT INTO comments (ticket_id, user_id, body)

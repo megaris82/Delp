@@ -1,29 +1,30 @@
-// users.html logic: admin user management (list, edit, delete) and registration approval.
-// Also loads the country/city dropdowns (from the external API) for the edit form.
+// Logic for users.html: admin user management (list, edit, delete) and
+// registration approval. Also loads the country/city dropdowns for the edit form.
 
-// Ensure only admins can access this page.
+// Only admins can open this page; requireAuth redirects everyone else away.
 const user = requireAuth(["admin"]);
-// Cache of users by id (for the edit dialog).
+// Users cached by id, for the edit dialog.
 let usersById = {};
-// Cache of country -> [cities] for the edit form.
+// country -> list of cities, for the edit form.
 const cities = {};
-// Whether the country list has finished loading.
+// Whether the country list has finished loading from the API.
 let countriesLoaded = false;
-// Pending country/city selection to apply once countries are loaded.
+// Country/city to preselect once the list is ready (used when opening the edit
+// dialog before the API responded).
 const pendingSelection = {};
 
-// On load: build nav, load users and countries.
+// On load: build nav, load users and countries, and wire up the filters.
 if (user) {
   mountNav(user);
   loadUsers();
   loadCountries();
+
+  // Reload the user table when the role/status filters change.
+  document.getElementById("filterRole").addEventListener("change", loadUsers);
+  document.getElementById("filterStatus").addEventListener("change", loadUsers);
 }
 
-// Reload the user table when the role/status filters change.
-document.getElementById("filterRole").addEventListener("change", loadUsers);
-document.getElementById("filterStatus").addEventListener("change", loadUsers);
-
-// Fetch countries from the external API and fill the country <select>.
+// Fetch the country list from the external API and fill the country <select>.
 function loadCountries() {
   const country = document.getElementById("country");
   if (country.options.length > 1) {
@@ -44,6 +45,8 @@ function loadCountries() {
         cities[c.country] = c.cities || [];
       }
       countriesLoaded = true;
+      // If the edit dialog was opened before the list arrived, apply the
+      // saved country/city selection now.
       if (pendingSelection.country) {
         country.value = pendingSelection.country;
         onCountryChange();
@@ -76,7 +79,7 @@ function onCountryChange() {
   city.disabled = list.length === 0;
 }
 
-// Load users from the API, applying the role/status filters, and render the table.
+// Load users from the API with the current filters and render the table.
 function loadUsers() {
   const role = document.getElementById("filterRole").value;
   const status = document.getElementById("filterStatus").value;
@@ -119,7 +122,7 @@ function loadUsers() {
     });
 }
 
-// Open the edit dialog for a user, pre-filling their data (and country/city).
+// Open the edit dialog for a user, pre-filling their data (including country/city).
 function editUser(id) {
   const u = usersById[id];
   if (!u) {
@@ -132,7 +135,8 @@ function editUser(id) {
   document.getElementById("email").value = u.email || "";
   document.getElementById("address").value = u.address || "";
   if (!countriesLoaded) {
-    // Remember the selection and apply it once the country list is ready.
+    // The country list isn't ready yet, so remember the selection and apply it
+    // when loadCountries finishes.
     pendingSelection.country = u.country || "";
     pendingSelection.city = u.city || "";
   } else {
@@ -145,7 +149,7 @@ function editUser(id) {
   openModalById("userOverlay");
 }
 
-// Save edits (including role and registration status = approval/rejection).
+// Save edits (role and registration status are how an admin approves/rejects).
 function saveUser(e) {
   e.preventDefault();
   const id = document.getElementById("userId").value;
@@ -174,7 +178,7 @@ function saveUser(e) {
     });
 }
 
-// Delete a user (with confirmation).
+// Delete a user after confirmation.
 function deleteUser(id) {
   confirmDialog("Διαγραφή χρήστη;", function () {
     api("/api/users/" + id, { method: "DELETE" })

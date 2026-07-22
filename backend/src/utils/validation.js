@@ -1,14 +1,14 @@
-// Input validation helpers for the authentication endpoints.
-// Each validator returns { errors, value } where `errors` is an array of
-// human-readable messages and `value` is the sanitized input object.
+// Checks the data sent to the auth endpoints and returns a list of problems
+// plus the cleaned-up values.
 
 const MIN_USERNAME_LENGTH = 3;
 const MIN_PASSWORD_LENGTH = 6;
 
-// Shared email pattern (also reused by userController for profile updates).
+// Simple email pattern, also reused by userController for profile updates.
 const EMAIL_REGEX = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
-// Validate the payload of a registration (sign-up) request.
+// Validates the registration form. The role is hardcoded to "user" here on
+// purpose: a new account can't pick its own role, an admin assigns it later.
 function validateRegister(body) {
   const errors = [];
   const {
@@ -43,15 +43,12 @@ function validateRegister(body) {
       country: country || null,
       city: city || null,
       address: address || null,
-      // Security: the role is ALWAYS "user" for self-registrations. The value
-      // sent by the client is ignored on purpose; an admin assigns the real
-      // role (user / technician / admin) later when approving the request.
       role: "user",
     },
   };
 }
 
-// Validate the payload of a login request.
+// Validates the login form (just needs username and password).
 function validateLogin(body) {
   const errors = [];
   const { username, password } = body || {};

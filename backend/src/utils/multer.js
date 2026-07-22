@@ -1,25 +1,20 @@
-// File upload handling using multer (multipart/form-data).
-// Used for ticket attachments (e.g. screenshots).
 const path = require("path");
 const crypto = require("crypto");
 const multer = require("multer");
 
-// Directory where uploaded files are stored (backend/uploads).
+// Where uploaded files end up on disk.
 const UPLOAD_DIR = path.join(__dirname, "..", "..", "uploads");
 
-// Only image files are accepted.
+// Only images are allowed. We check both the MIME type and the extension so
+// that a file claiming "image/jpeg" but named "evil.php" gets rejected.
 const ALLOWED = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-
-// Allowed file extensions (kept in sync with ALLOWED MIME types). Both the
-// MIME type and the extension are validated to block "image/jpeg" claims that
-// carry a non-image extension such as .php.
 const ALLOWED_EXT = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
 
-// Maximum upload size: 5 MB.
+// 5 MB max per file.
 const MAX_SIZE = 5 * 1024 * 1024;
 
-// Configure disk storage: keep the original extension but generate a random
-// file name to avoid collisions and path-traversal issues.
+// Save files to UPLOAD_DIR with a random hex name so original names (and any
+// weird characters in them) can't collide or be guessed.
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, UPLOAD_DIR);
@@ -31,7 +26,7 @@ const storage = multer.diskStorage({
   },
 });
 
-// Reject any file whose MIME type or extension is not in the allowed lists.
+// Reject anything that isn't in the allowed lists above.
 const fileFilter = function (req, file, cb) {
   const ext = path.extname(file.originalname).toLowerCase();
   if (ALLOWED.includes(file.mimetype) && ALLOWED_EXT.includes(ext)) {
@@ -41,8 +36,7 @@ const fileFilter = function (req, file, cb) {
   }
 };
 
-// Export a configured multer middleware that handles a single file under the
-// field name "attachment".
+// One file per request, under the form field name "attachment".
 const upload = multer({
   storage: storage,
   limits: { fileSize: MAX_SIZE },

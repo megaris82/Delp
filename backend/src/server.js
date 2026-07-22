@@ -1,12 +1,10 @@
-// Express application entry point.
-// Sets up static file serving for the frontend, mounts the REST API routers,
-// and installs 404 + global error handlers.
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
 
+// Folder where uploaded attachments are stored on disk.
 const UPLOAD_DIR = path.join(__dirname, "..", "uploads");
-// Make sure the uploads directory exists at startup.
+// Create it at startup so multer doesn't fail on the first upload.
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
@@ -22,18 +20,15 @@ const { findAttachmentByFilename } = require("./models/ticketModel");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Parse JSON request bodies.
 app.use(express.json());
-// Serve the static frontend (HTML/CSS/JS).
+// Serve the static frontend files (HTML/CSS/JS) from the /frontend folder.
 app.use(express.static(path.join(__dirname, "..", "..", "frontend")));
 
-// Serve uploaded attachment files through an authenticated endpoint so that
-// private ticket attachments are not world-readable just by guessing the URL.
-// Agents (admin / technician) may view any attachment; regular users only
-// those belonging to tickets they created.
+// Serve attachment files behind login so that a user can't just guess a URL.
+// Agents can view any attachment; regular users only their own tickets' files.
 app.get("/api/uploads/:filename", authenticate, async (req, res, next) => {
   try {
-    // Guard against path traversal in the requested file name.
+    // path.basename drops any "../" etc. so nobody can read files outside UPLOAD_DIR.
     const filename = path.basename(req.params.filename);
     const attachment = await findAttachmentByFilename(filename);
     if (!attachment) {
@@ -41,8 +36,7 @@ app.get("/api/uploads/:filename", authenticate, async (req, res, next) => {
     }
 
     const isAgent = req.user.role === "admin" || req.user.role === "technician";
-    // attachment.created_by is the ticket creator's user id (integer), so it
-    // must be compared against req.user.id, not req.user.username.
+    // attachment.created_by is the ticket creator's user id, so compare with req.user.id.
     if (!isAgent && attachment.created_by !== req.user.id) {
       return res.status(403).json({ error: "Forbidden" });
     }
@@ -57,20 +51,20 @@ app.get("/api/uploads/:filename", authenticate, async (req, res, next) => {
   }
 });
 
-// Mount API routers under /api.
+// All API routers live under /api.
 app.use("/api/auth", authRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/announcements", announcementRoutes);
 app.use("/api/users", userRoutes);
 
-// Fallback 404 for any unknown route.
+// Anything that didn't match a route above is a 404.
 app.use((req, res) => {
   res.status(404).json({ error: "Not found" });
 });
 
-// Global error handler: log the error and return a generic 500 response
-// so the server never crashes on an unhandled exception.
+// Last-resort error handler: log the real error but return a generic message
+// so the client never sees an internal stack trace.
 app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ error: "Internal server error" });

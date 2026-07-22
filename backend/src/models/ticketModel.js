@@ -1,8 +1,7 @@
-// Data access layer for the "tickets" table and its related attachments.
 const { pool } = require("../db");
 
-// Shared SELECT that joins tickets with their category and the usernames of the
-// creator and the assigned technician, so the API can return readable labels.
+// The SELECT used for listing/reading tickets. Joins the category and the
+// creator/assignee usernames so the API can show readable labels instead of ids.
 const COLUMNS = `
   SELECT
     t.id,
@@ -23,7 +22,7 @@ const COLUMNS = `
   LEFT JOIN users assignee ON t.assigned_to = assignee.id
 `;
 
-// Return every ticket (used by admins / technicians).
+// All tickets, newest first (used by agents).
 async function findAll() {
   const [rows] = await pool.query(
     COLUMNS + " ORDER BY t.created_at DESC"
@@ -31,7 +30,7 @@ async function findAll() {
   return rows;
 }
 
-// Return tickets created by a specific user (used by regular users).
+// Tickets created by one user (used by regular users).
 async function findMine(createdBy) {
   const [rows] = await pool.query(
     COLUMNS + " WHERE t.created_by = ? ORDER BY t.created_at DESC",
@@ -40,13 +39,13 @@ async function findMine(createdBy) {
   return rows;
 }
 
-// Return a single ticket by id.
+// One ticket by id.
 async function findById(id) {
   const [rows] = await pool.query(COLUMNS + " WHERE t.id = ?", [id]);
   return rows[0] || null;
 }
 
-// Create a new ticket (status defaults to "open" in the database).
+// Insert a new ticket. Status defaults to "open" in the database.
 async function create({ created_by, category_id, description }) {
   const [result] = await pool.query(
     `INSERT INTO tickets (created_by, category_id, description)
@@ -56,12 +55,11 @@ async function create({ created_by, category_id, description }) {
   return result.insertId;
 }
 
-// Update only the status of a ticket.
 async function updateStatus(id, status) {
   await pool.query("UPDATE tickets SET status = ? WHERE id = ?", [status, id]);
 }
 
-// Assign (or unassign, with NULL) a ticket to a technician.
+// Assign a ticket to a technician, or pass null to unassign it.
 async function assign(id, assigned_to) {
   await pool.query("UPDATE tickets SET assigned_to = ? WHERE id = ?", [
     assigned_to,
@@ -69,7 +67,6 @@ async function assign(id, assigned_to) {
   ]);
 }
 
-// Set the resolution text of a ticket.
 async function setResolution(id, resolution) {
   await pool.query("UPDATE tickets SET resolution = ? WHERE id = ?", [
     resolution,
@@ -77,7 +74,7 @@ async function setResolution(id, resolution) {
   ]);
 }
 
-// Attach an uploaded file path to a ticket.
+// Save the path of an uploaded file against a ticket.
 async function addAttachment({ ticket_id, uploaded_by, file_path }) {
   const [result] = await pool.query(
     `INSERT INTO attachments (ticket_id, uploaded_by, file_path)
@@ -87,8 +84,8 @@ async function addAttachment({ ticket_id, uploaded_by, file_path }) {
   return result.insertId;
 }
 
-// Return all attachment rows for a list of ticket ids (used to merge file
-// paths into the ticket objects in the controller).
+// All attachment rows for the given ticket ids. Used to merge file paths into
+// the ticket objects in the controller.
 async function findAttachmentsByTickets(ids) {
   if (!ids.length) {
     return [];
@@ -102,9 +99,8 @@ async function findAttachmentsByTickets(ids) {
   return rows;
 }
 
-// Look up an attachment by its stored file name (e.g. "<random>.jpg"). Returns
-// the owning ticket id and the ticket creator's id so the API can decide
-// whether the requester is allowed to view the file.
+// Find an attachment by its stored filename. Returns the ticket id and the
+// ticket creator's id so /api/uploads can check who's allowed to view it.
 async function findAttachmentByFilename(filename) {
   const [rows] = await pool.query(
     `SELECT a.ticket_id AS ticket_id, t.created_by AS created_by

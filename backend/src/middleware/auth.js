@@ -1,8 +1,7 @@
-// Authentication middleware: verify JWTs and enforce role-based access.
 const { verifyToken } = require("../utils/jwt");
 
-// Middleware: ensure the request carries a valid Bearer token and attach the
-// decoded user (id, username, role) to req.user.
+// Reads the "Authorization: Bearer <token>" header, checks the token, and
+// puts the decoded user (id, username, role) on req.user for later handlers.
 function authenticate(req, res, next) {
   const header = req.headers.authorization || "";
   const [scheme, token] = header.split(" ");
@@ -19,8 +18,8 @@ function authenticate(req, res, next) {
   }
 }
 
-// Middleware factory: restrict an endpoint to one or more roles.
-// Usage: authorize("admin") or authorize("technician", "admin").
+// Returns a middleware that only lets the given roles through.
+// Example: authorize("admin") or authorize("technician", "admin").
 function authorize(...roles) {
   return (req, res, next) => {
     if (!req.user) {

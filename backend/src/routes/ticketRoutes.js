@@ -1,4 +1,3 @@
-// Ticket routes: CRUD + comments. File uploads are handled by multer.
 const express = require("express");
 const multer = require("multer");
 const router = express.Router();
@@ -7,7 +6,8 @@ const commentController = require("../controllers/commentController");
 const { authenticate, authorize } = require("../middleware/auth");
 const { upload } = require("../utils/multer");
 
-// Wrap multer so upload errors are returned as JSON instead of HTML.
+// Wraps multer so upload errors come back as JSON instead of Express's
+// default HTML error page.
 function handleUpload(req, res, next) {
   upload(req, res, function (err) {
     if (err) {
@@ -24,14 +24,14 @@ function handleUpload(req, res, next) {
   });
 }
 
-// GET    /api/tickets            -> list tickets (agent: all, user: own)
+// List tickets (agents see all, users see their own).
 router.get("/", authenticate, ticketController.list);
-// POST   /api/tickets            -> create a ticket with optional attachment (user)
+// Create a ticket with an optional attachment.
 router.post("/", authenticate, authorize("user"), handleUpload, ticketController.createTicket);
 
-// GET    /api/tickets/:id/comments -> list comments for a ticket
+// List comments on a ticket.
 router.get("/:id/comments", authenticate, commentController.list);
-// POST   /api/tickets/:id/comments -> add a comment (admin, technician)
+// Add a comment to a ticket (agents only).
 router.post(
   "/:id/comments",
   authenticate,
@@ -39,7 +39,7 @@ router.post(
   commentController.addComment
 );
 
-// PATCH  /api/tickets/:id        -> update status / assignee / resolution (admin, technician)
+// Update a ticket's status / assignee / resolution (agents only).
 router.patch("/:id", authenticate, authorize("technician", "admin"), ticketController.updateTicket);
 
 module.exports = router;

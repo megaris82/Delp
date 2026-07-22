@@ -1,20 +1,17 @@
-// announcements.html logic: admin announcement management (list, create, edit, delete).
-// Regular users are redirected away by requireAuth(["admin"]).
+// Logic for announcements.html: admin announcement management (list, create,
+// edit, delete).
 
-// Ensure only admins can access this page.
+// Only admins can open this page; requireAuth redirects everyone else away.
 const user = requireAuth(["admin"]);
-const isAdmin = user && user.role === "admin";
 
 if (user) {
   mountNav(user);
-  if (isAdmin) {
-    // Show the create/edit side panel for admins.
-    document.getElementById("announcementPanel").style.display = "block";
-  }
+  // Show the create form in the side panel.
+  document.getElementById("announcementPanel").style.display = "block";
   loadAnnouncements();
 }
 
-// Load announcements and render them; admins also see edit/delete actions.
+// Load announcements and render them with edit/delete buttons.
 function loadAnnouncements() {
   api("/api/announcements")
     .then(function (res) {
@@ -27,14 +24,11 @@ function loadAnnouncements() {
       let html = "";
       for (let i = 0; i < announcements.length; i++) {
         const a = announcements[i];
-        let actions = "";
-        if (isAdmin) {
-          actions =
-            '<div class="actions">' +
-            '<button class="btn btn-outline" onclick="editAnnouncement(' + a.id + ')">Επεξεργασία</button> ' +
-            '<button class="btn btn-danger" onclick="deleteAnnouncement(' + a.id + ')">Διαγραφή</button>' +
-            "</div>";
-        }
+        const actions =
+          '<div class="actions">' +
+          '<button class="btn btn-outline" onclick="editAnnouncement(' + a.id + ')">Επεξεργασία</button> ' +
+          '<button class="btn btn-danger" onclick="deleteAnnouncement(' + a.id + ')">Διαγραφή</button>' +
+          "</div>";
         html +=
           '<article class="card" id="announcement-' + a.id + '">' +
           '<h3 data-title>' + escapeHtml(a.title) + "</h3>" +
@@ -51,6 +45,7 @@ function loadAnnouncements() {
 }
 
 // Open the edit dialog, copying the announcement's current values into the form.
+// Reads them back out of the rendered card via the data-title/data-body hooks.
 function editAnnouncement(id) {
   const card = document.getElementById("announcement-" + id);
   document.getElementById("editAnnouncementId").value = id;
@@ -83,7 +78,8 @@ function saveAnnouncementEdit(e) {
     });
 }
 
-// Create a new announcement (the side-panel form submits here).
+// Create a new announcement (the side-panel form submits here). If
+// announcementId is set it does a PUT instead, so the same form can edit too.
 function saveAnnouncement(e) {
   e.preventDefault();
   const id = document.getElementById("announcementId").value;
@@ -101,7 +97,7 @@ function saveAnnouncement(e) {
         return;
       }
       notify("Αποθηκεύτηκε.", "ok");
-      // Reset the side-panel create form for the next entry.
+      // Reset the side-panel form for the next entry.
       document.getElementById("announcementModalTitle").textContent = "Νέα Ανακοίνωση";
       document.getElementById("announcementId").value = "";
       document.getElementById("title").value = "";
@@ -114,7 +110,7 @@ function saveAnnouncement(e) {
     });
 }
 
-// Delete an announcement (with confirmation).
+// Delete an announcement after confirmation.
 function deleteAnnouncement(id) {
   confirmDialog("Διαγραφή ανακοίνωσης;", function () {
     api("/api/announcements/" + id, { method: "DELETE" })

@@ -1,7 +1,7 @@
-// categories.html logic: admin category management (list, create, edit, delete)
-// with an associated priority level.
+// Logic for categories.html: admin category management (list, create, edit,
+// delete) with a priority level.
 
-// Ensure only admins can access this page.
+// Only admins can open this page; requireAuth redirects everyone else away.
 const user = requireAuth(["admin"]);
 
 if (user) {
@@ -22,6 +22,9 @@ function loadCategories() {
       let html = "";
       for (let i = 0; i < categories.length; i++) {
         const c = categories[i];
+        // The edit button passes the current name and priority straight into
+        // the onclick. The name is escaped and its single quotes encoded so the
+        // JS string literal doesn't break.
         html +=
           "<tr>" +
           "<td>" + c.id + "</td>" +
@@ -51,7 +54,7 @@ function openCategoryModal() {
   document.getElementById("name").focus();
 }
 
-// Open the edit dialog for a category (values passed from the table row).
+// Open the edit dialog for a category (values come from the table row).
 function editCategory(id, name, priority) {
   document.getElementById("editCategoryId").value = id;
   document.getElementById("editName").value = name;
@@ -83,7 +86,8 @@ function saveCategoryEdit(e) {
     });
 }
 
-// Create a new category (the side-panel form submits here).
+// Create a new category (the side-panel form submits here). If categoryId is
+// set it does a PUT instead, so the same form can edit too.
 function saveCategory(e) {
   e.preventDefault();
   const id = document.getElementById("categoryId").value;
@@ -109,7 +113,7 @@ function saveCategory(e) {
     });
 }
 
-// Delete a category (with confirmation).
+// Delete a category after confirmation.
 function deleteCategory(id) {
   confirmDialog("Διαγραφή κατηγορίας;", function () {
     api("/api/categories/" + id, { method: "DELETE" })

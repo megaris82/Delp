@@ -1,6 +1,6 @@
-// announcements-view.html logic: read-only list of announcements for all users.
+// Logic for announcements-view.html: read-only announcement list for all users.
 
-// Ensure the visitor is authenticated.
+// Redirect to login if not authenticated; grab the user object.
 const user = requireAuth();
 
 if (user) {
@@ -8,7 +8,7 @@ if (user) {
   loadAnnouncements();
 }
 
-// Load and render all announcements.
+// Load and render all announcements (no edit/delete actions on this page).
 function loadAnnouncements() {
   api("/api/announcements")
     .then(function (res) {

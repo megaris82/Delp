@@ -1,10 +1,8 @@
-// Comment controller: list and add comments/actions on a ticket (admin, technician only for writes).
 const { findByTicket, create } = require("../models/commentModel");
 const { findById } = require("../models/ticketModel");
 
-// GET /api/tickets/:id/comments
-// Return all comments for a ticket. A regular user may only read comments on
-// tickets they created; agents (admin / technician) may read any ticket.
+// GET /api/tickets/:id/comments — returns the comments on a ticket. Regular
+// users can only read comments on their own tickets; agents can read any.
 async function list(req, res, next) {
   try {
     const ticket = await findById(req.params.id);
@@ -24,12 +22,10 @@ async function list(req, res, next) {
   }
 }
 
-// POST /api/tickets/:id/comments  (admin, technician)
-// Add a comment / resolution note to a ticket.
+// POST /api/tickets/:id/comments — an agent adds a comment/note to a ticket.
 async function addComment(req, res, next) {
   try {
     const ticketId = req.params.id;
-    // The ticket must exist before a comment can be attached.
     const ticket = await findById(ticketId);
     if (!ticket) {
       return res.status(404).json({ error: "Ticket not found" });

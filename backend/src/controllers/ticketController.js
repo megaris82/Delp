@@ -1,4 +1,3 @@
-// Ticket controller: listing, creation and agent updates (status / assignment / resolution).
 const {
   findAll,
   findMine,
@@ -13,7 +12,8 @@ const {
 const { findById: findUserById } = require("../models/userModel");
 const { TICKET_STATUSES } = require("../utils/constants");
 
-// Attach the file paths of their attachments to a list of ticket objects.
+// Groups each ticket's attachment file paths under t.attachments, so the API
+// response has them nested instead of as a separate list.
 function mergeAttachments(tickets, attachments) {
   const byTicket = {};
   for (const a of attachments) {
@@ -27,8 +27,7 @@ function mergeAttachments(tickets, attachments) {
   }
 }
 
-// GET /api/tickets
-// Agents (admin/technician) see every ticket; regular users see only their own.
+// GET /api/tickets — agents see all tickets, regular users only their own.
 async function list(req, res, next) {
   try {
     const isAgent = req.user.role === "admin" || req.user.role === "technician";
@@ -42,8 +41,7 @@ async function list(req, res, next) {
   }
 }
 
-// POST /api/tickets  (user)
-// Create a new support ticket, optionally with one image attachment.
+// POST /api/tickets — a user creates a ticket, optionally with one image.
 async function createTicket(req, res, next) {
   try {
     const category_id = Number(req.body.category_id);
@@ -66,7 +64,7 @@ async function createTicket(req, res, next) {
       description: description,
     });
 
-    // If a file was uploaded (handled by the multer middleware), record it.
+    // If multer saved a file, store its URL on the ticket.
     let file_path = null;
     if (req.file) {
       file_path = "/api/uploads/" + req.file.filename;
@@ -91,8 +89,7 @@ async function createTicket(req, res, next) {
   }
 }
 
-// PATCH /api/tickets/:id  (admin, technician)
-// Partially update a ticket: status, assigned technician, and/or resolution.
+// PATCH /api/tickets/:id — agents update status, assignee, and/or resolution.
 async function updateTicket(req, res, next) {
   try {
     const ticket = await findById(req.params.id);
@@ -110,11 +107,11 @@ async function updateTicket(req, res, next) {
     }
     if (assigned_to !== undefined) {
       if (assigned_to === null) {
-        // Explicitly unassigning the ticket is allowed.
+        // null means "unassign", which is fine.
       } else {
         const assigneeId = Number(assigned_to);
-        // Number.isInteger rejects non-numeric strings (e.g. "abc") that would
-        // otherwise slip through a "Number(x) <= 0" check (NaN comparisons).
+        // Number.isInteger catches strings like "abc" (which become NaN and
+        // would silently pass a "Number(x) <= 0" check).
         if (!Number.isInteger(assigneeId) || assigneeId <= 0) {
           errors.push("assigned_to must be a valid user id or null");
         } else {
@@ -135,6 +132,7 @@ async function updateTicket(req, res, next) {
       return res.status(400).json({ error: "Validation failed", details: errors });
     }
 
+    // Only run the updates for fields that were actually sent.
     if (status !== undefined) {
       await updateStatus(ticket.id, status);
     }
@@ -145,6 +143,7 @@ async function updateTicket(req, res, next) {
       await setResolution(ticket.id, resolution);
     }
 
+    // Return the ticket in its new state.
     const updated = await findById(ticket.id);
     const attachments = await findAttachmentsByTickets([updated.id]);
     mergeAttachments([updated], attachments);

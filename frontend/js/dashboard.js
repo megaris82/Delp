@@ -1,21 +1,20 @@
-// dashboard.html logic: tickets list + detail view + creation + agent management.
-// Regular users see only their own tickets (open + past). Agents (admin/technician)
-// see all tickets and get a management panel (status / assignment / resolution / comments).
+// Logic for dashboard.html: the tickets list, the detail view, the new-ticket
+// form, and the agent management panel (status/assignment/resolution/comments).
 
-// Ensure the visitor is authenticated; store the user object.
+// Redirect to login if not authenticated; grab the user object.
 const user = requireAuth();
-// Tickets with these statuses are shown under "open" for regular users.
+// Tickets in these statuses count as "open" for regular users.
 const OPEN_STATUSES = ["open", "in_progress"];
-// Closed tickets are shown under "past" (history).
 const PAST_STATUSES = ["closed"];
-// Local cache of tickets by id for quick lookups when opening the detail modal.
+// Tickets cached by id, so opening the detail modal can read from memory.
 let ticketsById = {};
-// Object URL for the currently previewed attachment (revoked when a new one is opened).
+// Object URL for the attachment currently being previewed. Revoked when a
+// new one is opened, otherwise the browser keeps the blob alive.
 let attachmentObjUrl = null;
 
-// On page load: build the nav and fetch tickets (and, for users, the category list).
 if (user) {
   mountNav(user);
+  // Regular users need the category list for the new-ticket form; agents don't.
   if (!isAgent()) {
     loadCategories();
   }
@@ -27,7 +26,7 @@ function isAgent() {
   return user.role === "admin" || user.role === "technician";
 }
 
-// Human-readable label for a ticket status.
+// Turn a status into the text shown in the UI. Only in_progress needs changing.
 function statusLabel(status) {
   if (status === "in_progress") {
     return "in progress";
@@ -35,7 +34,7 @@ function statusLabel(status) {
   return status || "";
 }
 
-// Build the "Άνοιγμα" action cell for a table row.
+// Build the "Άνοιγμα" button cell for a table row.
 function openCell(id) {
   return (
     '<td class="actions">' +
@@ -44,7 +43,7 @@ function openCell(id) {
   );
 }
 
-// Load tickets from the API and render them (all vs. own).
+// Load tickets from the API and render them (all for agents, own for users).
 function loadTickets() {
   api("/api/tickets")
     .then(function (res) {
@@ -64,8 +63,8 @@ function loadTickets() {
     });
 }
 
-// Render the open/in_progress and closed ticket tables for agents.
-// Tickets are ranked by ascending id within each table.
+// Render the agent view: two tables, one for open/in_progress and one for closed.
+// Within each table rows are sorted by id ascending.
 function renderAll(tickets) {
   document.getElementById("allSection").style.display = "";
   document.getElementById("userSection").style.display = "none";
@@ -101,7 +100,7 @@ function renderAll(tickets) {
   }
 }
 
-// Build table rows for the agent view (includes creator and assignee columns).
+// Build the rows for the agent tables (includes creator and assignee columns).
 function buildAgentRows(tickets) {
   let html = "";
   for (let i = 0; i < tickets.length; i++) {
@@ -110,18 +109,18 @@ function buildAgentRows(tickets) {
       "<tr>" +
       "<td>" + t.id + "</td>" +
       "<td>" + escapeHtml(statusLabel(t.status)) + "</td>" +
-       "<td>" + escapeHtml(t.category) + "</td>" +
-       "<td>" + escapeHtml(t.priority) + "</td>" +
-       "<td>" + escapeHtml(t.created_by_name) + "</td>" +
-       "<td>" + escapeHtml(t.assigned_to_name) + "</td>" +
-       "<td>" + escapeHtml(t.created_at) + "</td>" +
-       openCell(t.id) +
+      "<td>" + escapeHtml(t.category) + "</td>" +
+      "<td>" + escapeHtml(t.priority) + "</td>" +
+      "<td>" + escapeHtml(t.created_by_name) + "</td>" +
+      "<td>" + escapeHtml(t.assigned_to_name) + "</td>" +
+      "<td>" + escapeHtml(t.created_at) + "</td>" +
+      openCell(t.id) +
       "</tr>";
   }
   return html;
 }
 
-// Render the open + past ticket tables for regular users.
+// Render the user view: open tickets on top, past (closed) tickets below.
 function renderUser(tickets) {
   document.getElementById("allSection").style.display = "none";
   document.getElementById("userSection").style.display = "";
@@ -152,7 +151,7 @@ function renderUser(tickets) {
   }
 }
 
-// Build table rows for the user view (fewer columns).
+// Build the rows for the user tables (no creator/assignee columns).
 function buildRows(tickets) {
   let html = "";
   for (let i = 0; i < tickets.length; i++) {
@@ -170,8 +169,7 @@ function buildRows(tickets) {
   return html;
 }
 
-// Populate the read-only "top box" of the detail modal (info list, description,
-// and the read-only resolution shown to non-agents) from a ticket object.
+// Fill the read-only info box at the top of the detail modal.
 function renderTicketInfo(t) {
   document.getElementById("detailId").textContent = t.id;
   document.getElementById("detailStatus").textContent = statusLabel(t.status);
@@ -184,7 +182,7 @@ function renderTicketInfo(t) {
   document.getElementById("detailResolution").textContent = t.resolution || "";
 }
 
-// Open the detail modal for a ticket and populate it.
+// Open the detail modal for a ticket and fill it in.
 function openTicket(id) {
   const t = ticketsById[id];
   if (!t) {
@@ -192,6 +190,8 @@ function openTicket(id) {
   }
   renderTicketInfo(t);
 
+  // Attachment buttons. We pass the ticket id + index (not the file path) into
+  // the onclick, so the path isn't sitting in an inline HTML attribute.
   const att = document.getElementById("detailAttachments");
   const files = t.attachments || [];
   if (!files.length) {
@@ -199,8 +199,6 @@ function openTicket(id) {
   } else {
     let html = "";
     for (let i = 0; i < files.length; i++) {
-      // Pass the numeric ticket id + attachment index rather than the file
-      // path, so the URL is never interpolated into an inline onclick handler.
       html +=
         '<button class="btn btn-outline" onclick="viewAttachment(' +
         t.id + ", " + i + ')">Προβολή</button> ';
@@ -211,6 +209,7 @@ function openTicket(id) {
   const agent = isAgent();
   const resolution = t.resolution || "";
   document.getElementById("agentPanel").style.display = agent ? "" : "none";
+  // Non-agents only see the resolution box if there is one.
   document.getElementById("resolutionReadonly").style.display = agent ? "none" : resolution ? "" : "none";
   document.getElementById("commentBox").style.display = agent ? "" : "none";
   document.getElementById("detailResolution").textContent = resolution;
@@ -226,7 +225,7 @@ function openTicket(id) {
   openModalById("detailOverlay");
 }
 
-// Populate the "assign to technician" dropdown with all technicians.
+// Fill the "assign to technician" dropdown with all technicians.
 function loadTechnicians(selectedId) {
   const select = document.getElementById("detailAssigneeInput");
   api("/api/users?role=technician")
@@ -248,7 +247,7 @@ function loadTechnicians(selectedId) {
     });
 }
 
-// Save status / resolution / assignment changes made by an agent.
+// Save an agent's status/resolution/assignment changes for a ticket.
 function saveTicketChanges() {
   const id = document.getElementById("detailId").textContent;
   const payload = {
@@ -326,7 +325,7 @@ function addComment() {
     });
 }
 
-// Load the category list into the "new ticket" form's <select>.
+// Fill the category <select> in the new-ticket form.
 function loadCategories() {
   api("/api/categories")
     .then(function (res) {
@@ -344,13 +343,13 @@ function loadCategories() {
     });
 }
 
-// Open the "new ticket" creation modal (resetting the form first).
+// Open the "new ticket" modal, resetting the form first.
 function openCreateModal() {
   document.getElementById("createForm").reset();
   openModalById("createOverlay");
 }
 
-// Submit a new ticket (with optional file attachment) via multipart/form-data.
+// Submit a new ticket (with an optional image) as multipart/form-data.
 function submitCreate(e) {
   e.preventDefault();
   const form = document.getElementById("createForm");
@@ -365,7 +364,7 @@ function submitCreate(e) {
     return;
   }
 
-  // Client-side guard mirroring the backend 5 MB multer limit.
+  // Match the backend 5 MB limit so we fail early instead of after uploading.
   const fileInput = form.querySelector("#attachment");
   if (fileInput && fileInput.files && fileInput.files[0]) {
     if (fileInput.files[0].size > 5 * 1024 * 1024) {
@@ -389,9 +388,9 @@ function submitCreate(e) {
     });
 }
 
-// Open the attachment viewer modal for the attachment at the given index of the
-// cached ticket. The file is fetched through the authenticated /api/uploads
-// endpoint (which also enforces ownership) and shown via a blob URL.
+// Open the attachment viewer for the attachment at `index` of ticket `id`.
+// The file is fetched through /api/uploads (which checks ownership) and shown
+// via a blob URL so the token-protected response can be displayed in an <img>.
 function viewAttachment(id, index) {
   const t = ticketsById[id];
   if (!t || !t.attachments || !t.attachments[index]) {
@@ -414,9 +413,9 @@ function viewAttachment(id, index) {
       if (!blob) {
         return;
       }
-      // Revoke the previous object URL (if any) before creating a new one, so the
-      // blob stays valid for both the preview <img> and the download <a> while the
-      // modal is open. Revoking immediately on img load was breaking downloads.
+      // Revoke the previous object URL so we don't leak blob memory. We do it
+      // before creating the new one (not on img load) because the same URL is
+      // used by both the <img> and the download <a> below.
       if (attachmentObjUrl) {
         URL.revokeObjectURL(attachmentObjUrl);
       }

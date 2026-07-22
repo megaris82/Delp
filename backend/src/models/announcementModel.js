@@ -1,8 +1,6 @@
-// Data access layer for the "announcements" table.
 const { pool } = require("../db");
 
-// Return all announcements ordered by creation date (newest first),
-// joined with the username of the author.
+// All announcements, newest first, with the author's username joined in.
 async function findAll() {
   const [rows] = await pool.query(
     `SELECT a.id, a.title, a.body, a.created_at, u.username AS created_by
@@ -13,13 +11,13 @@ async function findAll() {
   return rows;
 }
 
-// Return a single announcement by id.
+// One announcement by id.
 async function findById(id) {
   const [rows] = await pool.query("SELECT * FROM announcements WHERE id = ?", [id]);
   return rows[0] || null;
 }
 
-// Create a new announcement. `created_by` is the id of the admin who posted it.
+// Create an announcement. created_by is the admin's user id.
 async function create(announcement) {
   const [result] = await pool.query(
     "INSERT INTO announcements (title, body, created_by) VALUES (?, ?, ?)",
@@ -38,7 +36,7 @@ async function update(id, announcement) {
   return findById(id);
 }
 
-// Delete an announcement by id. Returns true if a row was removed.
+// Delete an announcement. Returns true if a row was removed.
 async function remove(id) {
   const [result] = await pool.query("DELETE FROM announcements WHERE id = ?", [id]);
   return result.affectedRows > 0;

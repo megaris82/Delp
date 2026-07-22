@@ -308,6 +308,24 @@ body {
   font-size: 14px;
 }
 
+#detailComments {
+  max-height: 156px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+#detailComments .comment {
+  padding: 8px 10px;
+  border-left: 3px solid lightblue;
+  background: aliceblue;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+#detailComments .comment-meta {
+  font-size: 12px;
+  color: gray;
+  margin-top: 4px;
+}
+
 .card {
   background: white;
   border-radius: 8px;

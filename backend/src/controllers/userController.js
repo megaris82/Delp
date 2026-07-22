@@ -1,12 +1,8 @@
-// User management controller (admin only for mutations).
-// Supports listing users (with optional filters), updating a user's profile /
-// role / registration status, and deleting a user.
 const { findAll, findById, update, remove, countAdmins } = require("../models/userModel");
 const { ROLES, REGISTER_STATUSES } = require("../utils/constants");
 const { EMAIL_REGEX } = require("../utils/validation");
 
-// GET /api/users  (admin, technician)
-// List users, optionally filtered by ?role=... and/or ?register_status=...
+// GET /api/users — list users, optionally filtered by ?role and/or ?register_status.
 async function list(req, res, next) {
   try {
     const filters = {};
@@ -29,9 +25,8 @@ async function list(req, res, next) {
   }
 }
 
-// PUT /api/users/:id  (admin)
-// Update a user. Also used by admins to APPROVE or REJECT registration requests
-// (by setting register_status) and to ASSIGN a role.
+// PUT /api/users/:id — update a user's profile, role, and registration status.
+// Admins also use this to approve or reject pending registrations.
 async function updateUser(req, res, next) {
   try {
     const existing = await findById(req.params.id);
@@ -40,14 +35,23 @@ async function updateUser(req, res, next) {
     }
 
     const errors = [];
+    // If a field isn't sent, keep the current value.
     const role = req.body.role || existing.role;
     const register_status = req.body.register_status || existing.register_status;
 
-    // Prevent an administrator from removing their own admin privileges.
+    // An admin can't demote themselves (would leave them unable to manage things).
     if (Number(req.params.id) === req.user.id && role !== "admin") {
       return res.status(400).json({ error: "You cannot remove your own admin role" });
     }
-    // Prevent removing the last administrator from the system.
+    // An admin can't set their own status to pending/denied, because then they
+    // couldn't log back in to fix it.
+    if (
+      Number(req.params.id) === req.user.id &&
+      register_status !== "accepted"
+    ) {
+      return res.status(400).json({ error: "You cannot disable your own account" });
+    }
+    // Don't let the last admin be demoted, or nobody can admin the system.
     if (existing.role === "admin" && role !== "admin" && (await countAdmins()) <= 1) {
       return res.status(400).json({ error: "Cannot demote the last administrator" });
     }
@@ -91,9 +95,8 @@ async function updateUser(req, res, next) {
   }
 }
 
-// DELETE /api/users/:id  (admin)
-// Remove a user. Admins cannot delete their own account, nor the last
-// remaining administrator (to avoid locking the system out).
+// DELETE /api/users/:id — remove a user. An admin can't delete themselves or
+// the last remaining admin.
 async function deleteUser(req, res, next) {
   try {
     const existing = await findById(req.params.id);
